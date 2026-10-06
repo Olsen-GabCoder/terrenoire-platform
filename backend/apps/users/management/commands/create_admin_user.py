@@ -71,10 +71,11 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.WARNING(
                     "CREATE_ADMIN_PASSWORD non défini : mot de passe temporaire généré. "
-                    "Changez-le à la première connexion."
+                    "Utilisez « Mot de passe oublié » pour le définir."
                 )
             )
-            self.stdout.write(self.style.WARNING(f"Mot de passe (à noter) : {password}"))
+            # Le mot de passe n'est volontairement pas affiché (les logs de déploiement
+            # sont conservés) : utilisez "Mot de passe oublié" pour le définir.
 
         if len(password) < 8:
             self.stdout.write(

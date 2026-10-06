@@ -38,8 +38,8 @@ if not DEBUG and _SECRET_KEY == 'django-insecure-fallback-key':
     )
 SECRET_KEY = _SECRET_KEY
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
-ALLOWED_HOSTS.append('testserver')  # Pour les tests Django
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h.strip()]
+# Note : le test runner Django ajoute lui-même 'testserver' pendant les tests.
 
 
 # Application definition
@@ -178,12 +178,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-# Dossiers sources pour collectstatic : notre static/ + static de l'admin Django (CSS/JS admin en prod)
+# Dossiers sources pour collectstatic : notre static/.
+# Les fichiers de l'admin Django sont déjà trouvés par AppDirectoriesFinder
+# (les ajouter ici provoquait des centaines d'avertissements "Found another file").
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-import django
-_admin_static = Path(django.__file__).parent / 'contrib' / 'admin' / 'static'
-if _admin_static.exists():
-    STATICFILES_DIRS = list(STATICFILES_DIRS) + [str(_admin_static)]
 # Créer staticfiles au démarrage (évite le warning si collectstatic n'a rien copié, ex. Render)
 os.makedirs(STATIC_ROOT, exist_ok=True)
 
@@ -356,6 +354,16 @@ CORS_ALLOWED_ORIGINS = [
     o.strip() for o in (os.getenv('CORS_ALLOWED_ORIGINS') or 'http://localhost:5173,http://127.0.0.1:5173').split(',')
     if o.strip()
 ]
+# Le domaine du frontend (FRONTEND_URL) est toujours autorisé, avec et sans "www.",
+# pour éviter qu'un oubli dans CORS_ALLOWED_ORIGINS ne bloque tout le site.
+_frontend_origin = os.getenv('FRONTEND_URL', '').strip().rstrip('/')
+if _frontend_origin.startswith('http'):
+    _scheme, _host = _frontend_origin.split('://', 1)
+    _host = _host.split('/', 1)[0]
+    _bare = _host[4:] if _host.startswith('www.') else _host
+    for _origin in (f'{_scheme}://{_bare}', f'{_scheme}://www.{_bare}'):
+        if _origin not in CORS_ALLOWED_ORIGINS:
+            CORS_ALLOWED_ORIGINS.append(_origin)
 CSRF_TRUSTED_ORIGINS = [
     o.strip() for o in (os.getenv('CSRF_TRUSTED_ORIGINS') or os.getenv('CORS_ALLOWED_ORIGINS') or 'http://localhost:5173,http://127.0.0.1:5173').split(',')
     if o.strip()

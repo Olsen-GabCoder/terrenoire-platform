@@ -39,6 +39,16 @@ class Order(models.Model):
         """True si la commande contient au moins un livre papier."""
         return self.items.filter(format_purchased='PAPIER').exists()
 
+    def release_coupon(self):
+        """Rend une utilisation au coupon (commande annulée sans avoir été payée)."""
+        if not self.coupon_code:
+            return
+        from django.db.models import F
+        from apps.coupons.models import Coupon
+        Coupon.objects.filter(code=self.coupon_code, usage_count__gt=0).update(
+            usage_count=F('usage_count') - 1
+        )
+
 
 class OrderItem(models.Model):
     FORMAT_CHOICES = [

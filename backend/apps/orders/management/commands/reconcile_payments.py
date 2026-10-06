@@ -14,28 +14,17 @@ import logging
 from datetime import timedelta
 
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.orders.models import Order, Payment
 from apps.orders.services.bamboo_pay import get_bamboo_service, BambooPayError
+from apps.orders.services.payment_finalizer import apply_bamboo_result, map_bamboo_status
 
 logger = logging.getLogger('bamboo_pay')
 
-STATUS_MAP = {
-    'completed': 'SUCCESS',
-    'success': 'SUCCESS',
-    'successful': 'SUCCESS',
-    'approved': 'SUCCESS',
-    'paid': 'SUCCESS',
-    'failed': 'FAILED',
-    'rejected': 'FAILED',
-    'cancelled': 'FAILED',
-    'expired': 'EXPIRED',
-    'timeout': 'EXPIRED',
-    'pending': 'PENDING',
-    'processing': 'PENDING',
-}
+# Les paiements EXPIRED plus anciens ne sont plus revérifiés auprès de Bamboo.
+EXPIRED_RECHECK_WINDOW = timedelta(days=7)
 
 
 class Command(BaseCommand):
@@ -57,7 +46,7 @@ class Command(BaseCommand):
         # R4.1 — Paiements PENDING/EXPIRED > 15 min
         cutoff = timezone.now() - timedelta(minutes=15)
         stale_payments = Payment.objects.filter(
-            status__in=['PENDING', 'EXPIRED'],
+            Q(status='PENDING') | Q(status='EXPIRED', created_at__gte=timezone.now() - EXPIRED_RECHECK_WINDOW),
             created_at__lt=cutoff,
         ).select_related('order')
 
@@ -77,38 +66,19 @@ class Command(BaseCommand):
             for payment in stale_payments:
                 try:
                     result = service.check_status(payment.transaction_id)
-                    tx = result.get('transaction', {})
-                    bamboo_status = tx.get('status', 'pending').lower().strip()
-                    new_status = STATUS_MAP.get(bamboo_status, 'PENDING')
+                    tx = result.get('transaction') or {}
+                    new_status = map_bamboo_status(tx.get('status'))
 
-                    if new_status == 'PENDING':
+                    if new_status == 'PENDING' or new_status == payment.status:
                         continue
 
                     self.stdout.write(
                         f'{prefix}Payment {payment.transaction_id}: '
-                        f'{payment.status} -> {new_status} (bamboo: {bamboo_status})'
+                        f'{payment.status} -> {new_status} (bamboo: {tx.get("status")})'
                     )
 
                     if not dry_run:
-                        with transaction.atomic():
-                            payment.status = new_status
-                            payment.bamboo_response = result
-                            payment.finalized_at = timezone.now()
-                            payment.save()
-
-                            if new_status == 'SUCCESS' and payment.order.status == 'PENDING':
-                                payment.order.status = 'PAID'
-                                payment.order.save()
-                                try:
-                                    from apps.core.email import send_order_paid
-                                    send_order_paid(payment.order)
-                                except Exception:
-                                    pass
-
-                        logger.info(
-                            "reconcile.finalized ref=%s status=%s order=%d",
-                            payment.transaction_id, new_status, payment.order.id
-                        )
+                        apply_bamboo_result(payment.pk, result, source='reconcile')
 
                     reconciled += 1
 
@@ -141,7 +111,12 @@ class Command(BaseCommand):
                 status='PENDING',
             ).update(status='EXPIRED', finalized_at=timezone.now())
 
-            updated = abandoned_orders.update(status='CANCELLED')
+            updated = 0
+            for order in abandoned_orders:
+                order.status = 'CANCELLED'
+                order.save(update_fields=['status', 'updated_at'])
+                order.release_coupon()
+                updated += 1
             logger.info("reconcile.cancelled_abandoned count=%d", updated)
             self.stdout.write(f'Commandes annulees: {updated}')
         elif abandoned_count > 0 and dry_run:

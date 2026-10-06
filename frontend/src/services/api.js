@@ -68,10 +68,13 @@ api.interceptors.response.use(
     // Exception : les endpoints de paiement gerent leurs propres erreurs.
     // Une redirection forcee tuerait le polling et ferait croire au client
     // que son paiement a echoue alors que Bamboo peut encore confirmer.
+    // Idem pour les requêtes qui modifient des données (création de commande...) :
+    // l'utilisateur doit voir l'erreur sur place, pas être éjecté de la page.
     const requestUrl = error.config?.url || '';
     const isPaymentEndpoint = requestUrl.includes('/payments/');
+    const isReadRequest = (error.config?.method || 'get').toLowerCase() === 'get';
 
-    if (error.response?.status >= 500 && !isPaymentEndpoint) {
+    if (error.response?.status >= 500 && !isPaymentEndpoint && isReadRequest) {
       console.error('Server error:', error.response.status, error.config?.url);
       window.location.href = '/erreur-serveur';
       return new Promise(() => {}); // never resolves (page navigates away)
@@ -165,7 +168,8 @@ export const authAPI = {
   login: (credentials) => api.post('/token/', credentials),
   register: (userData) => api.post('/users/register/', userData),
   checkAuth: () => api.get('/users/check-auth/'),
-  logout: () => api.post('/users/logout/'),
+  // Le refresh token est envoyé pour être révoqué côté serveur
+  logout: () => api.post('/users/logout/', { refresh: tokenStorage.getRefreshToken() }),
   updateProfile: (data) => api.patch('/users/me/', data),
   changePassword: (data) => api.put('/users/me/change-password/', data),
   forgotPassword: (email) => api.post('/users/forgot-password/', { email }),

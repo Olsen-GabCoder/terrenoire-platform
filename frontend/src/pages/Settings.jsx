@@ -4,19 +4,20 @@ import { useAuth } from '../context/AuthContext';
 import '../styles/Settings.css';
 
 const Settings = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, authChecked, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [receiveNewsletter, setReceiveNewsletter] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
+    if (!authChecked) return;
     if (!user) {
-      navigate('/login');
+      navigate('/login', { state: { from: '/settings' } });
       return;
     }
     setReceiveNewsletter(user.receive_newsletter || false);
-  }, [user, navigate]);
+  }, [authChecked, user, navigate]);
 
   const handleNewsletterChange = async (e) => {
     const checked = e.target.checked;

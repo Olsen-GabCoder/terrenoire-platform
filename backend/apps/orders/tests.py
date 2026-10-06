@@ -8,6 +8,7 @@ from django.utils import timezone
 from apps.books.models import Book, Category, Author
 from apps.coupons.models import Coupon
 from apps.core.models import SiteConfig
+from apps.orders.models import Order
 
 User = get_user_model()
 
@@ -72,7 +73,7 @@ class OrderCreateTest(APITestCase):
 
     def test_create_order_with_valid_coupon(self):
         """Une commande avec coupon valide applique la reduction."""
-        Coupon.objects.create(code='PROMO10', discount_percent=10, is_active=True)
+        Coupon.objects.create(code='PROMO10', discount_type='percent', discount_value=10, is_active=True)
         self.client.force_authenticate(user=self.user)
         payload = self._order_payload()
         payload['coupon_code'] = 'PROMO10'
@@ -81,10 +82,10 @@ class OrderCreateTest(APITestCase):
         self.assertGreater(float(response.data.get('discount_amount', 0)), 0)
 
     def test_create_order_with_expired_coupon(self):
-        """Un coupon expire ne donne pas de reduction."""
+        """Un coupon expire est refuse avec un message explicite."""
         Coupon.objects.create(
             code='EXPIRED',
-            discount_percent=10,
+            discount_type='percent', discount_value=10,
             is_active=True,
             valid_until=timezone.now() - timezone.timedelta(days=1),
         )
@@ -92,17 +93,19 @@ class OrderCreateTest(APITestCase):
         payload = self._order_payload()
         payload['coupon_code'] = 'EXPIRED'
         response = self.client.post('/api/orders/', payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(float(response.data.get('discount_amount', 0)), 0)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('coupon_code', response.data)
+        self.assertFalse(Order.objects.exists())
 
     def test_create_order_with_maxed_coupon(self):
-        """Un coupon ayant atteint max_uses ne donne pas de reduction."""
+        """Un coupon ayant atteint max_uses est refuse."""
         Coupon.objects.create(
-            code='MAXED', discount_percent=20, is_active=True, max_uses=1, usage_count=1,
+            code='MAXED', discount_type='percent', discount_value=20, is_active=True, max_uses=1, usage_count=1,
         )
         self.client.force_authenticate(user=self.user)
         payload = self._order_payload()
         payload['coupon_code'] = 'MAXED'
         response = self.client.post('/api/orders/', payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(float(response.data.get('discount_amount', 0)), 0)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('coupon_code', response.data)
+        self.assertFalse(Order.objects.exists())

@@ -2,12 +2,14 @@
 Vues JWT qui stockent les tokens dans des cookies HttpOnly.
 """
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.exceptions import InvalidToken
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from django.conf import settings
 
 from apps.core.throttling import LoginThrottle
@@ -82,6 +84,8 @@ class CookieTokenRefreshView(APIView):
     Définit le nouveau access token en cookie.
     """
     permission_classes = [AllowAny]
+    # Un access token expiré ne doit pas bloquer le refresh / la déconnexion
+    authentication_classes = []
 
     def post(self, request):
         refresh_name = getattr(settings, 'JWT_REFRESH_COOKIE_NAME', 'refresh_token')
@@ -91,26 +95,23 @@ class CookieTokenRefreshView(APIView):
                 {'detail': 'Token de rafraîchissement manquant.'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
+        # TokenRefreshSerializer applique ROTATE_REFRESH_TOKENS et
+        # BLACKLIST_AFTER_ROTATION tels que définis dans settings.SIMPLE_JWT.
+        serializer = TokenRefreshSerializer(data={'refresh': refresh_value})
         try:
-            refresh = RefreshToken(refresh_value)
-            access = str(refresh.access_token)
-            new_refresh = None
-            if getattr(settings.SIMPLE_JWT, 'ROTATE_REFRESH_TOKENS', False):
-                new_refresh = RefreshToken.for_user(refresh.user)
-                new_refresh = str(new_refresh)
-            data = {'access': access}
-            if new_refresh:
-                data['refresh'] = new_refresh
-            response = Response(data)
-            _set_auth_cookies(response, access, new_refresh)
-            return response
-        except InvalidToken:
+            serializer.is_valid(raise_exception=True)
+        except (TokenError, InvalidToken, ValidationError):
             response = Response(
                 {'detail': 'Token invalide ou expiré.'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
             _clear_auth_cookies(response)
             return response
+
+        data = serializer.validated_data
+        response = Response(data)
+        _set_auth_cookies(response, data['access'], data.get('refresh'))
+        return response
 
 
 class LogoutView(APIView):
@@ -119,8 +120,18 @@ class LogoutView(APIView):
     POST /api/users/logout/
     """
     permission_classes = [AllowAny]
+    # Un access token expiré ne doit pas bloquer le refresh / la déconnexion
+    authentication_classes = []
 
     def post(self, request):
+        # Révoquer le refresh token pour qu'il ne puisse plus être réutilisé
+        refresh_name = getattr(settings, 'JWT_REFRESH_COOKIE_NAME', 'refresh_token')
+        refresh_value = request.data.get('refresh') or request.COOKIES.get(refresh_name)
+        if refresh_value:
+            try:
+                RefreshToken(refresh_value).blacklist()
+            except TokenError:
+                pass
         response = Response({'message': 'Déconnexion réussie.'}, status=status.HTTP_200_OK)
         _clear_auth_cookies(response)
         return response

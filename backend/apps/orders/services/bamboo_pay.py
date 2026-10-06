@@ -16,6 +16,7 @@ import logging
 import os
 import time
 import requests
+from urllib.parse import urlencode
 from requests.auth import HTTPBasicAuth
 
 logger = logging.getLogger('bamboo_pay')
@@ -48,8 +49,19 @@ class BambooPayService:
                 f"Verifiez votre .env ou vos variables d'environnement."
             )
 
-        self.callback_url = os.environ.get('BAMBOO_CALLBACK_URL', '')
+        self.callback_url = self._build_callback_url(
+            os.environ.get('BAMBOO_CALLBACK_URL', ''),
+            os.environ.get('BAMBOO_WEBHOOK_SECRET', ''),
+        )
         self.auth = HTTPBasicAuth(self.username, self.password)
+
+    @staticmethod
+    def _build_callback_url(url, secret):
+        """Ajoute le jeton secret du webhook à l'URL de callback (si configuré)."""
+        if not url or not secret or 'token=' in url:
+            return url
+        separator = '&' if '?' in url else '?'
+        return f"{url}{separator}{urlencode({'token': secret})}"
 
     def initiate_instant_payment(self, phone, amount, payer_name,
                                   reference, operator):
@@ -93,11 +105,11 @@ class BambooPayService:
             'operateur': operator,
         }
 
-        logger.warning(
-            "bamboo.initiate_payload ref=%s op=%s phone=%s (raw=%s) amount=%s "
-            "callback_url=%s merchant=%s",
-            reference, operator, phone_clean, phone, amount,
-            self.callback_url or '(VIDE)', self.merchant_id
+        logger.info(
+            "bamboo.initiate_payload ref=%s op=%s phone=%s amount=%s "
+            "callback_configured=%s merchant=%s",
+            reference, operator, phone_clean[:3] + '****' + phone_clean[-2:], amount,
+            bool(self.callback_url), self.merchant_id
         )
 
         try:

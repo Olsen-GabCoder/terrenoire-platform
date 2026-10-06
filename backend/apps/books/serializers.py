@@ -270,14 +270,8 @@ class BookDetailSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return False
-        if request.user.is_staff:
-            return True
-        from apps.orders.models import OrderItem
-        return OrderItem.objects.filter(
-            order__user=request.user,
-            order__status='PAID',
-            book=obj,
-        ).exists()
+        from .access import user_can_read_ebook
+        return user_can_read_ebook(request.user, obj)
 
     def get_excerpt_pdf_url(self, obj):
         if obj.excerpt_pdf:

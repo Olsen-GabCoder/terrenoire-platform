@@ -18,11 +18,11 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
         
         # Si le champ contient un @, c'est un email, on cherche l'utilisateur par email
         if '@' in username_or_email:
-            try:
-                user = User.objects.get(email=username_or_email)
+            # L'email n'est pas unique en base : on prend le compte actif le plus ancien
+            user = User.objects.filter(email__iexact=username_or_email).order_by('-is_active', 'id').first()
+            if user is not None:
                 # Remplacer la valeur du champ username par le vrai username
                 attrs['username'] = user.username
-            except User.DoesNotExist:
-                pass  # L'erreur sera gérée par la validation parente
+            # Sinon, l'erreur sera gérée par la validation parente
         
         return super().validate(attrs)

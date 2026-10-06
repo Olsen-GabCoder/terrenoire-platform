@@ -288,9 +288,11 @@ class PasswordChangeSerializer(serializers.Serializer):
         """
         Change le mot de passe de l'utilisateur
         """
+        from .tokens import revoke_user_tokens
         user = self.context['request'].user
         user.set_password(self.validated_data['new_password'])
         user.save()
+        revoke_user_tokens(user)
         return user
 
 

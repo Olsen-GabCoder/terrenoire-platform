@@ -6,7 +6,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/Orders.css';
 
 const Orders = () => {
-  const { user } = useAuth();
+  const { user, authChecked } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,12 +15,13 @@ const Orders = () => {
   const [downloadingId, setDownloadingId] = useState(null);
 
   useEffect(() => {
+    if (!authChecked) return;
     if (!user) {
-      navigate('/login');
+      navigate('/login', { state: { from: '/orders' } });
       return;
     }
     loadOrders();
-  }, [user, navigate]);
+  }, [authChecked, user, navigate]);
 
   const loadOrders = async () => {
     setLoading(true);

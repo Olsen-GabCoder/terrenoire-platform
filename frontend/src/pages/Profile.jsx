@@ -5,7 +5,7 @@ import orderService from '../services/orderService';
 import '../styles/Profile.css';
 
 const Profile = () => {
-  const { user, logout, updateProfile } = useAuth();
+  const { user, authChecked, logout, updateProfile } = useAuth();
   const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState('info');
@@ -65,11 +65,12 @@ const Profile = () => {
   };
 
   // Rediriger vers la page de connexion si l'utilisateur n'est pas connecté
+  // (attendre la fin de la vérification de session, sinon un F5 déconnecte l'utilisateur)
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
+    if (authChecked && !user) {
+      navigate('/login', { state: { from: '/profile' } });
     }
-  }, [user, navigate]);
+  }, [authChecked, user, navigate]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

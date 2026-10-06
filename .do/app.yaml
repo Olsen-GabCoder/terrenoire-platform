@@ -76,6 +76,10 @@ services:
         type: SECRET
       - key: BAMBOO_CALLBACK_URL
         scope: RUN_TIME
+      # Jeton secret ajouté automatiquement à l'URL de callback Bamboo (?token=...)
+      - key: BAMBOO_WEBHOOK_SECRET
+        scope: RUN_TIME
+        type: SECRET
       - key: EMAIL_HOST
         scope: RUN_TIME
         value: "smtp-relay.brevo.com"

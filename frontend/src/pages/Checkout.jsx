@@ -10,12 +10,12 @@ import '../styles/Checkout.css';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const retryOrderId = searchParams.get('retry');
 
   const { cartItems, appliedCoupon, clearCart, getTotalPrice, getTotalItems } = useCart();
   const { shippingFreeThreshold, shippingCost } = useDeliveryConfig();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, authChecked } = useAuth();
 
   const [formData, setFormData] = useState({
     shipping_address: '',
@@ -23,7 +23,6 @@ const Checkout = () => {
     shipping_city: '',
   });
 
-  const hasPhysical = cartItems.some((i) => i.format_purchased === 'PAPIER');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -33,6 +32,11 @@ const Checkout = () => {
   // Retry mode state
   const [retryOrder, setRetryOrder] = useState(null);
   const [retryLoading, setRetryLoading] = useState(false);
+
+  // En mode retry le panier est vide : on se base sur les articles de la commande
+  const hasPhysical = retryOrder
+    ? (retryOrder.items || []).some((i) => (i.format_purchased || 'PAPIER') === 'PAPIER')
+    : cartItems.some((i) => i.format_purchased === 'PAPIER');
 
   // Load retry order if ?retry=N
   useEffect(() => {
@@ -68,10 +72,10 @@ const Checkout = () => {
   }, [retryOrderId, isAuthenticated]);
 
   useEffect(() => {
-    if (orderPlaced) return;
+    if (orderPlaced || !authChecked) return;
 
     if (!isAuthenticated) {
-      navigate('/login', { state: { from: '/checkout' } });
+      navigate('/login', { state: { from: retryOrderId ? `/checkout?retry=${retryOrderId}` : '/checkout' } });
       return;
     }
 
@@ -82,17 +86,18 @@ const Checkout = () => {
     }
 
     if (user && !retryOrderId) {
-      setFormData({
-        shipping_address: user.address || '',
-        shipping_phone: user.phone_number || '',
-        shipping_city: user.city || '',
-      });
+      // Pré-remplir sans écraser ce que l'utilisateur a déjà saisi
+      setFormData((prev) => ({
+        shipping_address: prev.shipping_address || user.address || '',
+        shipping_phone: prev.shipping_phone || user.phone_number || '',
+        shipping_city: prev.shipping_city || user.city || '',
+      }));
       if (user.phone_number) {
         const digits = user.phone_number.replace(/\D/g, '').slice(-9);
-        if (digits.length >= 8) setPhoneForPayment(digits);
+        if (digits.length >= 8) setPhoneForPayment((prev) => prev || digits);
       }
     }
-  }, [isAuthenticated, cartItems, user, navigate, retryOrderId]);
+  }, [authChecked, isAuthenticated, cartItems, user, navigate, retryOrderId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -171,6 +176,14 @@ const Checkout = () => {
           });
         } catch (payErr) {
           console.error('initiatePayment failed:', payErr);
+          // La commande existe déjà : on bascule en mode retry pour qu'un nouveau
+          // clic réutilise cette commande au lieu d'en créer une seconde.
+          if (!retryOrder) {
+            setRetryOrder(order);
+            setOrderPlaced(true);
+            clearCart();
+            setSearchParams({ retry: String(order.id) }, { replace: true });
+          }
           setError(
             payErr.response?.data?.error ||
               payErr.response?.data?.detail ||

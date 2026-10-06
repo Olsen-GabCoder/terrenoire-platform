@@ -24,11 +24,15 @@ class OrderItemSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'price']
 
 
+class OrderItemInputSerializer(serializers.Serializer):
+    """Article envoyé par le client : seuls l'id, la quantité et le format sont pris en compte."""
+    book_id = serializers.IntegerField(min_value=1)
+    quantity = serializers.IntegerField(min_value=1, max_value=100)
+    format_purchased = serializers.ChoiceField(choices=['PAPIER', 'EBOOK'], default='PAPIER')
+
+
 class OrderCreateSerializer(serializers.Serializer):
-    items = serializers.ListField(
-        child=serializers.DictField(),
-        write_only=True
-    )
+    items = OrderItemInputSerializer(many=True, write_only=True)
     shipping_address = serializers.CharField(max_length=500, required=False, allow_blank=True, default='')
     shipping_phone = serializers.CharField(max_length=20, required=False, allow_blank=True, default='')
     shipping_city = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
@@ -38,18 +42,12 @@ class OrderCreateSerializer(serializers.Serializer):
         if not value:
             raise serializers.ValidationError("La commande doit contenir au moins un article.")
 
-        for item in value:
-            if 'book_id' not in item or 'quantity' not in item:
-                raise serializers.ValidationError("Chaque article doit avoir book_id et quantity.")
-            if int(item['quantity']) < 1:
-                raise serializers.ValidationError("La quantité doit être au moins 1.")
-            fmt = item.get('format_purchased', 'PAPIER')
-            if fmt not in ('PAPIER', 'EBOOK'):
-                raise serializers.ValidationError("Format invalide. Utilisez PAPIER ou EBOOK.")
+        if len(value) > 50:
+            raise serializers.ValidationError("Une commande ne peut pas contenir plus de 50 articles.")
 
         # Ebook = 1 exemplaire max
         for item in value:
-            if item.get('format_purchased') == 'EBOOK' and int(item['quantity']) > 1:
+            if item.get('format_purchased') == 'EBOOK' and item['quantity'] > 1:
                 raise serializers.ValidationError(
                     "Un ebook ne peut etre commande qu'en un seul exemplaire."
                 )
@@ -112,7 +110,7 @@ class OrderCreateSerializer(serializers.Serializer):
         items_data = validated_data.pop('items')
         user = self.context['request'].user
 
-        subtotal = 0
+        subtotal = Decimal('0')
         order_items = []
         book_ids = [item['book_id'] for item in items_data]
         books_map = {b.id: b for b in Book.objects.filter(id__in=book_ids).select_related('category', 'author')}
@@ -152,17 +150,13 @@ class OrderCreateSerializer(serializers.Serializer):
         if coupon_code:
             try:
                 coupon = Coupon.objects.select_for_update().get(code=coupon_code)
-                if coupon.is_active:
-                    now = timezone.now()
-                    if (not coupon.valid_from or now >= coupon.valid_from) and (not coupon.valid_until or now <= coupon.valid_until):
-                        if coupon.max_uses is None or coupon.usage_count < coupon.max_uses:
-                            if coupon.discount_percent is not None:
-                                discount_amount = subtotal * (coupon.discount_percent / 100)
-                            elif coupon.discount_amount:
-                                discount_amount = min(coupon.discount_amount, subtotal)
-                            Coupon.objects.filter(pk=coupon.pk).update(usage_count=F('usage_count') + 1)
             except Coupon.DoesNotExist:
-                pass
+                raise serializers.ValidationError({'coupon_code': 'Code promo invalide.'})
+            error = coupon.validation_error(subtotal=subtotal, user=user)
+            if error:
+                raise serializers.ValidationError({'coupon_code': error})
+            discount_amount = coupon.compute_discount(subtotal)
+            Coupon.objects.filter(pk=coupon.pk).update(usage_count=F('usage_count') + 1)
 
         total_amount = max(Decimal('0'), subtotal - discount_amount + shipping_cost)
 

@@ -41,9 +41,9 @@ describe('Header', () => {
     expect(accueilLinks.length).toBeGreaterThan(0)
   })
 
-  it('affiche un bouton de recherche avec un label accessible', () => {
+  it('affiche un champ de recherche avec un label accessible', () => {
     renderWithRouter(<Header />)
-    const searchButtons = screen.getAllByRole('button', { name: /rechercher|recherche/i })
-    expect(searchButtons.length).toBeGreaterThan(0)
+    const searchInputs = screen.getAllByRole('textbox', { name: /rechercher|recherche/i })
+    expect(searchInputs.length).toBeGreaterThan(0)
   })
 })

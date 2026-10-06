@@ -75,8 +75,12 @@ def health_check(request):
 def admin_backup(request):
     """
     Génère une sauvegarde JSON de la base de données (dumpdata).
-    Accessible uniquement aux utilisateurs staff.
+    Accessible uniquement aux superutilisateurs : la sauvegarde contient
+    les hashes de mots de passe et les tokens.
     """
+    if not request.user.is_superuser:
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("Sauvegarde réservée aux superutilisateurs.")
     buffer = io.StringIO()
     try:
         call_command('dumpdata', '--natural-foreign', '--natural-primary', stdout=buffer)

@@ -15,10 +15,7 @@ class ModelTests(TestCase):
     
     def setUp(self):
         """Configuration initiale pour tous les tests"""
-        self.category = Category.objects.create(
-            name="Roman",
-            slug="roman"
-        )
+        self.category = Category.objects.get_or_create(slug="roman", defaults={'name': "Roman"})[0]
         
         self.author = Author.objects.create(
             full_name="Victor Hugo",
@@ -155,10 +152,7 @@ class BookAPITests(APITestCase):
         self.client = APIClient()
         
         # Créer des données de test
-        self.category = Category.objects.create(
-            name="Science-Fiction",
-            slug="science-fiction"
-        )
+        self.category = Category.objects.get_or_create(slug="science-fiction", defaults={'name': "Science-Fiction"})[0]
         
         self.author = Author.objects.create(
             full_name="Isaac Asimov",
@@ -232,7 +226,7 @@ class BookAPITests(APITestCase):
     def test_book_filter_by_category(self):
         """Test du filtre par catégorie"""
         # Créer une nouvelle catégorie et un livre associé
-        category2 = Category.objects.create(name="Fantasy", slug="fantasy")
+        category2 = Category.objects.get_or_create(slug="fantasy", defaults={'name': "Fantasy"})[0]
         Book.objects.create(
             title="Le Seigneur des Anneaux",
             reference="ISBN-FANTASY-001",
@@ -323,7 +317,8 @@ class BookAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['total_books'], 3)
         self.assertEqual(response.data['total_authors'], 1)
-        self.assertEqual(response.data['total_categories'], 1)
+        # Les catégories par défaut (migration 0005) sont aussi comptées
+        self.assertEqual(response.data['total_categories'], Category.objects.count())
         self.assertEqual(response.data['available_books'], 2)
         self.assertEqual(response.data['ebooks_count'], 1)
         self.assertEqual(response.data['paper_books_count'], 3)
@@ -353,8 +348,9 @@ class BookAPITests(APITestCase):
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
-        self.assertEqual(response.data['results'][0]['name'], "Science-Fiction")
+        # Les catégories par défaut (migration 0005) sont aussi listées
+        self.assertEqual(response.data['count'], Category.objects.count())
+        self.assertIn("Science-Fiction", [c['name'] for c in response.data['results']])
         
         # Détail d'une catégorie
         url = reverse('category-detail', args=[self.category.id])
@@ -388,7 +384,7 @@ class PaginationTests(APITestCase):
         """Créer plus de livres pour tester la pagination"""
         self.client = APIClient()
         
-        category = Category.objects.create(name="Test", slug="test")
+        category = Category.objects.get_or_create(slug="test", defaults={'name': "Test"})[0]
         author = Author.objects.create(full_name="Test Author", slug="test-author")
         
         # Créer 15 livres (plus que le page_size de 12)
@@ -427,7 +423,7 @@ class ValidationTests(TestCase):
     """Tests de validation des modèles"""
     
     def setUp(self):
-        self.category = Category.objects.create(name="Test", slug="test")
+        self.category = Category.objects.get_or_create(slug="test", defaults={'name': "Test"})[0]
         self.author = Author.objects.create(full_name="Test Author", slug="test-author")
     
     def test_book_price_validation(self):

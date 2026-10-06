@@ -5,6 +5,14 @@ import TnInput from '../components/ui/TnInput';
 import TnButton from '../components/ui/TnButton';
 import TnAlert from '../components/ui/TnAlert';
 import TnLink from '../components/ui/TnLink';
+
+// Les appelants passent `from` soit en chaîne ('/checkout'), soit en objet location.
+const getRedirectTarget = (state) => {
+  const from = state?.from;
+  const target = typeof from === 'string' ? from : from?.pathname && `${from.pathname}${from.search || ''}`;
+  // N'accepter que des chemins internes
+  return target && target.startsWith('/') && !target.startsWith('//') ? target : '/';
+};
 import '../styles/Login.css';
 
 const Login = () => {
@@ -24,7 +32,7 @@ const Login = () => {
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
       // Rediriger vers la page d'où on vient, ou l'accueil par défaut
-      const from = location.state?.from?.pathname || '/';
+      const from = getRedirectTarget(location.state);
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, authLoading, navigate, location]);
@@ -55,7 +63,7 @@ const Login = () => {
       const result = await login(formData.email, formData.password);
 
       if (result.success) {
-        const from = location.state?.from?.pathname || '/';
+        const from = getRedirectTarget(location.state);
         navigate(from, { replace: true });
       } else {
         // Gestion des erreurs spécifiques

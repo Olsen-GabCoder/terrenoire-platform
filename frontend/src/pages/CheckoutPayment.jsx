@@ -33,7 +33,7 @@ const CheckoutPayment = () => {
   const { bambooRef } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, authChecked } = useAuth();
 
   const { orderId, operator, phone, amount } = location.state || {};
 
@@ -49,11 +49,12 @@ const CheckoutPayment = () => {
   const [redirectCount, setRedirectCount] = useState(3);
 
   // Auth guard
+  // Auth guard (après vérification de la session : un F5 ne doit pas interrompre le suivi)
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login', { state: { from: location.pathname } });
+    if (authChecked && !isAuthenticated) {
+      navigate('/login', { state: { from: location.pathname + location.search } });
     }
-  }, [isAuthenticated, navigate, location.pathname]);
+  }, [authChecked, isAuthenticated, navigate, location.pathname, location.search]);
 
   // Polling
   useEffect(() => {

@@ -1,6 +1,10 @@
 # Configuration Render (référence)
-# Pour un service déjà créé à la main, copiez la commande "build" ci-dessous
-# dans Dashboard > votre service backend > Build & Deploy > Build Command.
+# Pour un service déjà créé à la main, recopiez ces commandes dans
+# Dashboard > votre service backend > Settings > Build & Deploy.
+#
+# IMPORTANT : la base de données n'est PAS joignable pendant la phase de build
+# sur Render (réseau privé indisponible). Les commandes qui touchent la base
+# (migrate, create_admin_user) doivent donc être lancées au démarrage, pas au build.
 
 services:
   - type: web
@@ -11,13 +15,15 @@ services:
     buildCommand: >
       pip install -r requirements-render.txt
       && python manage.py collectstatic --noinput
-      && python manage.py migrate
-      && python manage.py create_admin_user --no-update
 
-    startCommand: gunicorn config.wsgi:application
+    startCommand: >
+      python manage.py migrate --noinput
+      && python manage.py create_admin_user --no-update
+      && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 60
 
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.7"
       # À définir dans le dashboard (secrets) :
-      # CREATE_ADMIN_EMAIL, CREATE_ADMIN_PASSWORD, SECRET_KEY, DATABASE_URL, etc.
+      # CREATE_ADMIN_EMAIL, CREATE_ADMIN_PASSWORD, SECRET_KEY, DATABASE_URL,
+      # ALLOWED_HOSTS, CORS_ALLOWED_ORIGINS, FRONTEND_URL, BAMBOO_WEBHOOK_SECRET, etc.

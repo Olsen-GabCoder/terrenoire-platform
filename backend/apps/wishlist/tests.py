@@ -18,7 +18,7 @@ class WishlistTest(APITestCase):
             email='wish@example.com',
             password='TestPass123!',
         )
-        cat = Category.objects.create(name='Roman', slug='roman')
+        cat = Category.objects.get_or_create(slug='roman', defaults={'name': 'Roman'})[0]
         auth = Author.objects.create(full_name='Auteur', slug='auteur')
         self.book = Book.objects.create(
             title='Livre',

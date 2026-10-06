@@ -1,3 +1,5 @@
+from decimal import Decimal, ROUND_HALF_UP
+
 from django.db import models
 from django.core.validators import MinValueValidator
 
@@ -39,11 +41,43 @@ class Coupon(models.Model):
 
     @property
     def discount_percent(self):
-        return float(self.discount_value) if self.discount_type == 'percent' else None
+        return self.discount_value if self.discount_type == 'percent' else None
 
     @property
     def discount_amount(self):
-        return float(self.discount_value) if self.discount_type == 'fixed' else None
+        return self.discount_value if self.discount_type == 'fixed' else None
+
+    def validation_error(self, subtotal=None, user=None):
+        """
+        Retourne un message d'erreur si le coupon n'est pas utilisable, sinon None.
+        `subtotal` et `user` sont optionnels (la validation publique ne les connaît pas toujours).
+        """
+        from django.utils import timezone
+        if not self.is_active:
+            return "Ce code promo n'est plus actif."
+        now = timezone.now()
+        if self.valid_from and now < self.valid_from:
+            return "Ce code promo n'est pas encore valide."
+        if self.valid_until and now > self.valid_until:
+            return "Ce code promo a expire."
+        if self.max_uses is not None and self.usage_count >= self.max_uses:
+            return "Ce code promo a atteint sa limite d'utilisation."
+        if self.recipient_email and user is not None and getattr(user, 'is_authenticated', False):
+            if (user.email or '').strip().lower() != self.recipient_email.strip().lower():
+                return "Ce code promo est reserve a un autre client."
+        if subtotal is not None and self.min_order_amount and Decimal(subtotal) < self.min_order_amount:
+            return f"Ce code promo necessite un minimum de commande de {int(self.min_order_amount)} FCFA."
+        return None
+
+    def compute_discount(self, subtotal):
+        """Montant de la remise (Decimal) pour un sous-total donné, jamais supérieur au sous-total."""
+        subtotal = Decimal(subtotal)
+        if self.discount_type == 'percent':
+            percent = min(max(self.discount_value, Decimal('0')), Decimal('100'))
+            discount = (subtotal * percent / Decimal('100')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        else:
+            discount = self.discount_value
+        return min(max(discount, Decimal('0')), subtotal)
 
     def __str__(self):
         if self.discount_type == 'percent':

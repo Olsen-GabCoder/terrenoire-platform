@@ -10,7 +10,7 @@ class CouponValidateTest(APITestCase):
     """Tests de validation des codes promo."""
 
     def setUp(self):
-        Coupon.objects.create(code='TEST10', discount_percent=10)
+        Coupon.objects.create(code='TEST10', discount_type='percent', discount_value=10)
 
     def test_validate_success(self):
         response = self.client.post('/api/coupons/validate/', {'code': 'TEST10'})

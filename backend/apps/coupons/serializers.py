@@ -14,17 +14,10 @@ class CouponValidateSerializer(serializers.Serializer):
         except Coupon.DoesNotExist:
             raise serializers.ValidationError("Code promo invalide.")
 
-        if not coupon.is_active:
-            raise serializers.ValidationError("Ce code promo n'est plus actif.")
-
-        now = timezone.now()
-        if coupon.valid_from and now < coupon.valid_from:
-            raise serializers.ValidationError("Ce code promo n'est pas encore valide.")
-        if coupon.valid_until and now > coupon.valid_until:
-            raise serializers.ValidationError("Ce code promo a expire.")
-
-        if coupon.max_uses is not None and coupon.usage_count >= coupon.max_uses:
-            raise serializers.ValidationError("Ce code promo a atteint sa limite d'utilisation.")
+        request = self.context.get('request')
+        error = coupon.validation_error(user=getattr(request, 'user', None))
+        if error:
+            raise serializers.ValidationError(error)
 
         return code
 
@@ -54,3 +47,10 @@ class CouponSerializer(serializers.ModelSerializer):
 
     def validate_code(self, value):
         return value.upper().strip()
+
+    def validate(self, attrs):
+        discount_type = attrs.get('discount_type', getattr(self.instance, 'discount_type', 'percent'))
+        discount_value = attrs.get('discount_value', getattr(self.instance, 'discount_value', 0))
+        if discount_type == 'percent' and discount_value is not None and discount_value > 100:
+            raise serializers.ValidationError({'discount_value': 'Un pourcentage ne peut pas depasser 100.'})
+        return attrs

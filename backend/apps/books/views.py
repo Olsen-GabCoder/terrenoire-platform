@@ -9,6 +9,7 @@ from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
+from apps.core.permissions import CatalogWritePermissionMixin
 from rest_framework.pagination import PageNumberPagination
 
 from django_filters.rest_framework import DjangoFilterBackend
@@ -78,13 +79,9 @@ def serve_book_pdf(request, book_id):
 
     # Les admins ont toujours acces
     if not user.is_staff:
-        # Verifier que l'utilisateur a une commande payee contenant ce livre
-        has_purchased = OrderItem.objects.filter(
-            order__user=user,
-            order__status='PAID',
-            book=book,
-        ).exists()
-        if not has_purchased:
+        # Verifier que l'utilisateur a achete ce livre en version ebook
+        from .access import user_can_read_ebook
+        if not user_can_read_ebook(user, book):
             from django.http import JsonResponse
             return JsonResponse(
                 {'detail': 'Vous devez acheter ce livre pour pouvoir le lire.'},
@@ -185,7 +182,7 @@ class ReviewResultsSetPagination(PageNumberPagination):
     max_page_size = 50
 
 
-class BookViewSet(viewsets.ModelViewSet):
+class BookViewSet(CatalogWritePermissionMixin, viewsets.ModelViewSet):
     """
     ViewSet pour la gestion complète des livres
     
@@ -691,7 +688,7 @@ class BookViewSet(viewsets.ModelViewSet):
             })
 
 
-class AuthorViewSet(viewsets.ModelViewSet):
+class AuthorViewSet(CatalogWritePermissionMixin, viewsets.ModelViewSet):
     """
     ViewSet pour la gestion des auteurs
     
@@ -777,7 +774,7 @@ class AuthorViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(CatalogWritePermissionMixin, viewsets.ModelViewSet):
     """
     ViewSet pour la gestion des catégories
     
@@ -857,7 +854,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class CollectionViewSet(viewsets.ModelViewSet):
+class CollectionViewSet(CatalogWritePermissionMixin, viewsets.ModelViewSet):
     """ViewSet pour les collections editoriales."""
     queryset = Collection.objects.all()
     serializer_class = CollectionSerializer

@@ -19,7 +19,7 @@ class CouponValidateView(APIView):
     throttle_classes = [PublicEndpointThrottle]
 
     def post(self, request):
-        serializer = CouponValidateSerializer(data=request.data)
+        serializer = CouponValidateSerializer(data=request.data, context={'request': request})
         if not serializer.is_valid():
             return Response(
                 {'valid': False, 'message': serializer.errors.get('code', ['Code promo invalide.'])[0]},

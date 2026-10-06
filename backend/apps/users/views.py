@@ -9,7 +9,8 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework_simplejwt.views import TokenObtainPairView
-from apps.core.throttling import RegisterThrottle, PasswordResetThrottle
+from apps.core.throttling import RegisterThrottle, PasswordResetThrottle, PublicEndpointThrottle
+from .tokens import revoke_user_tokens
 from .serializers import (
     UserRegistrationSerializer,
     UserDetailSerializer,
@@ -230,6 +231,7 @@ class ResetPasswordView(APIView):
     POST /api/users/reset-password/ avec { "uid": "...", "token": "...", "new_password": "..." }
     """
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [PublicEndpointThrottle]
 
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
@@ -255,6 +257,7 @@ class ResetPasswordView(APIView):
 
         user.set_password(new_password)
         user.save()
+        revoke_user_tokens(user)
         return Response({'message': 'Mot de passe réinitialisé avec succès.'}, status=status.HTTP_200_OK)
 
 
