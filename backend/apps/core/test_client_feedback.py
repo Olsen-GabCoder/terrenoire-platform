@@ -6,6 +6,7 @@ from unittest import mock
 from django.contrib.admin.sites import site as admin_site
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.mail import EmailMultiAlternatives
 from django.test import TestCase, override_settings
@@ -23,6 +24,10 @@ User = get_user_model()
 
 class RegistrationTests(APITestCase):
     """Point 5 : plus de « Aucun compte actif… » après une inscription réussie."""
+
+    def setUp(self):
+        # Les limites d'inscription/connexion sont mémorisées dans le cache partagé
+        cache.clear()
 
     def test_register_returns_session_even_with_uppercase_username(self):
         response = self.client.post('/api/users/register/', {
@@ -154,6 +159,9 @@ class CheckStatusRobustnessTests(APITestCase):
 @override_settings(ADMIN_EMAIL='editions@example.com')
 class AutomaticEmailTests(APITestCase):
     """Point 10 : e-mails automatiques."""
+
+    def setUp(self):
+        cache.clear()  # limite d'inscriptions partagée entre les tests
 
     def _manuscript(self):
         return Manuscript.objects.create(
