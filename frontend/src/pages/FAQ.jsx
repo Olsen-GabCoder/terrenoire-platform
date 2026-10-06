@@ -7,7 +7,7 @@ const FAQ_CATEGORIES = [
     id: 'commandes', icon: 'fa-bag-shopping', label: 'Commandes & Paiement',
     items: [
       { q: 'Comment passer une commande ?', a: 'Parcourez notre catalogue, ajoutez les livres souhaités à votre panier, puis cliquez sur « Procéder au paiement ». Renseignez vos coordonnées et votre adresse de livraison, choisissez votre moyen de paiement et validez. Vous recevrez une confirmation par email avec le détail de votre commande.' },
-      { q: 'Quels moyens de paiement acceptez-vous ?', a: 'Nous acceptons Mobicash (Moov Money), Airtel Money, les cartes Visa et le paiement en espèces (uniquement pour les livraisons à Port-Gentil). Toutes les transactions électroniques sont sécurisées.' },
+      { q: 'Quels moyens de paiement acceptez-vous ?', a: 'Nous acceptons actuellement Moov Money et Airtel Money : vous validez le paiement directement sur votre téléphone. D\'autres moyens de paiement arriveront prochainement.' },
       { q: 'Comment utiliser un code promo ?', a: 'Dans votre panier, saisissez votre code promo dans le champ prévu et cliquez sur « Appliquer ». La réduction est immédiatement calculée et affichée avant validation. Un code promo ne peut être utilisé qu\'une seule fois et ne peut pas être combiné avec un autre code.' },
       { q: 'Comment suivre ma commande ?', a: 'Une fois votre commande expédiée, vous recevez un email avec les informations de suivi. Vous pouvez aussi consulter l\'état de vos commandes dans votre espace client (Mon compte > Mes commandes) après connexion.' },
       { q: 'Puis-je annuler ma commande ?', a: 'Oui, tant que votre commande est au statut « En attente » (avant paiement confirmé). Rendez-vous dans Mes commandes et cliquez sur « Annuler ». Une fois le paiement confirmé ou la commande expédiée, l\'annulation n\'est plus possible — vous pouvez alors exercer votre droit de rétractation.' },
@@ -96,7 +96,7 @@ const FAQ_CATEGORIES = [
   {
     id: 'contact', icon: 'fa-headset', label: 'Contact & Support',
     items: [
-      { q: 'Comment vous contacter ?', a: 'Par email : terrenoireeditions@gmail.com. Par téléphone : +241 65 34 88 87 ou +241 76 59 35 35. Via WhatsApp : +241 76 59 35 35. Ou via le formulaire de contact sur notre site.' },
+      { q: 'Comment vous contacter ?', a: 'Par email : terrenoireeditions@gmail.com. Par téléphone : +241 65 34 88 87. Via WhatsApp : +241 76 59 35 35. Ou via le formulaire de contact sur notre site.' },
       { q: 'Quel est le délai de réponse ?', a: 'Nous répondons généralement sous 24 heures (jours ouvrés).' },
       { q: 'Où êtes-vous situés ?', a: 'À Port-Gentil, Gabon. Nos ouvrages sont également disponibles chez nos librairies partenaires : Librairie du Mapane, Livre+ et Librairie Clé d\'Impact.' },
     ],

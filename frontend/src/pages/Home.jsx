@@ -8,10 +8,10 @@ import SectionSeparator from '../components/SectionSeparator';
 import useReveal from '../hooks/useReveal';
 import useParallax from '../hooks/useParallax';
 import useCountUp from '../hooks/useCountUp';
+import HERO_TAGLINES from '../config/heroTaglines';
 import '../styles/Home.css';
 
 /* ── Hook : mot qui alterne avec effet typing ── */
-const HERO_WORDS = ['aujourd\'hui', 'maintenant', 'ici', 'ensemble'];
 function useTypingWords(words, typingSpeed = 80, pauseMs = 2800) {
   const [display, setDisplay] = useState(words[0]);
   const [wordIndex, setWordIndex] = useState(0);
@@ -130,7 +130,7 @@ function AuthorCard3D({ author, enable3D = true }) {
 }
 
 const Home = () => {
-  const typingWord = useTypingWords(HERO_WORDS);
+  const typingWord = useTypingWords(HERO_TAGLINES);
   const [featured, setFeatured] = useState([]);
   const [bestsellers, setBestsellers] = useState([]);
   const [newReleases, setNewReleases] = useState([]);
@@ -238,7 +238,8 @@ const Home = () => {
         <div className={`home-hero-inner ${heroReady ? 'is-ready' : ''}`}>
           <div className="home-hero-left">
             <h1 className="home-hero-title">
-              Demain s'écrit <span className="home-hero-title__accent">{typingWord}<span className="home-hero-cursor" /></span>.
+              <span className="home-hero-title__line">Demain s'écrit</span>{' '}
+              <span className="home-hero-title__accent">{typingWord}<span className="home-hero-cursor" /></span>.
             </h1>
 
             <div className="home-hero-actions">
@@ -275,7 +276,7 @@ const Home = () => {
                   </div>
                 ))}
                 <div className="home-triptych__pick">
-                  <i className="fas fa-star" /> Sélection de la semaine
+                  <i className="fas fa-star" /> Sélection du moment
                 </div>
               </div>
             ) : null}

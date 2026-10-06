@@ -102,6 +102,10 @@ const orderService = {
       order_id: orderId,
       operator,
       phone,
+    }, {
+      // L'envoi de la demande USSD par Bamboo peut prendre jusqu'à ~30 s :
+      // le délai par défaut (15 s) faisait croire à un échec alors que la demande partait.
+      timeout: 45000,
     });
     return response.data;
   },

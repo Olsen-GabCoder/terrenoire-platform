@@ -83,8 +83,8 @@ const Contact = () => {
         <div className="ct-info-row">
           {[
             ['fa-envelope', 'Email', 'terrenoireeditions@gmail.com', 'mailto:terrenoireeditions@gmail.com'],
-            ['fa-phone', 'Téléphone', '+241 65 34 88 87 / +241 76 59 35 35', 'tel:+24165348887'],
-            ['fa-brands fa-whatsapp', 'WhatsApp', '+241 76 59 35 35', 'https://wa.me/24105348887'],
+            ['fa-phone', 'Téléphone', '+241 65 34 88 87', 'tel:+24165348887'],
+            ['fa-brands fa-whatsapp', 'WhatsApp', '+241 76 59 35 35', 'https://wa.me/24176593535'],
             ['fa-location-dot', 'Adresse', 'Port-Gentil, Gabon', null],
           ].map(([icon, title, value, href]) => (
             <div key={title} className="ct-info-card">
@@ -192,7 +192,7 @@ const Contact = () => {
               {[
                 ['fab fa-facebook-f', 'Facebook', 'https://www.facebook.com/profile.php?id=61556564940483', '#1877f2'],
                 ['fab fa-tiktok', 'TikTok', 'https://www.tiktok.com/@terrenoireedition?_r=1&_t=ZS-96fCndnPtAa', '#000'],
-                ['fab fa-whatsapp', 'WhatsApp', 'https://wa.me/24105348887', '#25d366'],
+                ['fab fa-whatsapp', 'WhatsApp', 'https://wa.me/24176593535', '#25d366'],
                 ['fas fa-envelope', 'Email', 'mailto:terrenoireeditions@gmail.com', 'var(--color-primary)'],
               ].map(([icon, label, href, color]) => (
                 <a key={label} href={href} className="ct-social-link" target="_blank" rel="noopener noreferrer" style={{ '--social-color': color }}>
@@ -210,7 +210,7 @@ const Contact = () => {
             </div>
             <div className="ct-faq-list">
               {[
-                ['Commande', 'Panier puis paiement via Mobicash, Airtel Money, especes ou carte Visa.'],
+                ['Commande', 'Panier puis paiement via Moov Money ou Airtel Money.'],
                 ['Livraison', '5-7 jours à Port-Gentil, 7-10 jours dans les autres villes du Gabon.'],
                 ['Manuscrit', 'Via le formulaire en ligne ou par email direct.'],
               ].map(([q, a]) => (

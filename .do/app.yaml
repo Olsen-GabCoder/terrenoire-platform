@@ -80,6 +80,10 @@ services:
       - key: BAMBOO_WEBHOOK_SECRET
         scope: RUN_TIME
         type: SECRET
+      # Envoi des e-mails via l'API HTTP Brevo (prioritaire sur le SMTP)
+      - key: BREVO_API_KEY
+        scope: RUN_TIME
+        type: SECRET
       - key: EMAIL_HOST
         scope: RUN_TIME
         value: "smtp-relay.brevo.com"

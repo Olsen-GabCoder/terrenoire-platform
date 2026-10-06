@@ -29,12 +29,7 @@ class ManuscriptCreateView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        manuscript = serializer.instance
-        try:
-            from apps.core.email import send_manuscript_acknowledgment
-            send_manuscript_acknowledgment(manuscript)
-        except Exception:
-            pass
+        # Accusé de réception + notification admin : envoyés par les signaux (signals.py)
         headers = self.get_success_headers(serializer.data)
         return Response(
             {
@@ -116,18 +111,9 @@ class ManuscriptStatusUpdateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        old_status = manuscript.status
         manuscript.status = status_value
         manuscript.save()
-
-        # Notifier l'auteur du changement de statut
-        if old_status != status_value:
-            try:
-                from apps.core.email import send_manuscript_status_changed
-                send_manuscript_status_changed(manuscript, old_status, status_value)
-            except Exception as e:
-                import logging
-                logging.getLogger(__name__).error(f"[EMAIL] Echec notification manuscrit #{manuscript.id}: {e}", exc_info=True)
+        # La notification de l'auteur est envoyée par le signal post_save (signals.py)
 
         return Response(
             {

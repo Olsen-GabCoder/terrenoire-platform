@@ -293,6 +293,11 @@ class PasswordChangeSerializer(serializers.Serializer):
         user.set_password(self.validated_data['new_password'])
         user.save()
         revoke_user_tokens(user)
+        try:
+            from apps.core.email import send_password_changed
+            send_password_changed(user)
+        except Exception:
+            pass
         return user
 
 

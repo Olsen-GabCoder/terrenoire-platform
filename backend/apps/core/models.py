@@ -24,6 +24,24 @@ class SiteConfig(models.Model):
         verbose_name="Frais de livraison (FCFA)",
         help_text="Frais si le panier est inférieur au seuil"
     )
+    # Sélection mise en avant sur la page d'accueil
+    SELECTION_SOURCE_CHOICES = [
+        ('all', 'Tous les livres disponibles'),
+        ('featured', 'Uniquement les livres marqués « Sélection »'),
+    ]
+    selection_rotation_hours = models.PositiveIntegerField(
+        default=24,
+        verbose_name="Renouvellement de la sélection (heures)",
+        help_text="La sélection d'accueil est tirée au hasard et renouvelée à cette fréquence "
+                  "(24 = chaque jour, 168 = chaque semaine, 0 = jamais).",
+    )
+    selection_source = models.CharField(
+        max_length=20,
+        choices=SELECTION_SOURCE_CHOICES,
+        default='all',
+        verbose_name="Livres éligibles à la sélection",
+        help_text="Avec « livres marqués », la sélection ne varie que s'il y a plus de 6 livres marqués.",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -36,6 +54,7 @@ class SiteConfig(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         cache.delete('delivery_config')
+        cache.delete('books_featured')
 
     @classmethod
     def get_config(cls):

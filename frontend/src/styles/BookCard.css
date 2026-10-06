@@ -217,6 +217,91 @@
   padding-top: 12px;
   border-top: 1px solid var(--tn-gray-100);
 }
+/* ── Choix du format (papier / ebook) ── */
+.tn-book-card__formats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--tn-gray-100);
+  cursor: default;
+}
+.tn-book-card__formats-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tn-gray-500, #6b6b6b);
+}
+.tn-book-card__format {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--tn-gray-200, #e2ddd6);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tn-dark, #1a1a1a);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.tn-book-card__format i { margin-right: 6px; color: var(--tn-orange); }
+.tn-book-card__format:hover:not(:disabled),
+.tn-book-card__format:focus-visible {
+  border-color: var(--tn-orange);
+  background: var(--tn-cream, #faf6f1);
+}
+.tn-book-card__format:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.tn-book-card__format-price {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.tn-book-card__formats-cancel {
+  align-self: center;
+  padding: 2px 6px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--tn-gray-500, #6b6b6b);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ── Lire un extrait ── */
+.tn-book-card__excerpt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--tn-orange);
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tn-orange);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.tn-book-card__excerpt:hover,
+.tn-book-card__excerpt:focus-visible {
+  background: var(--tn-orange);
+  color: #fff;
+}
+
 /* ── Featured state ── */
 .tn-book-card--featured {
   border-color: rgba(232,96,28,0.15);

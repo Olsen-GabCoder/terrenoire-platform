@@ -131,7 +131,8 @@ const Terms = () => (
           <div className="tm-info-row"><span>Dénomination</span><strong>Terre Noire Éditions</strong></div>
           <div className="tm-info-row"><span>Siège social</span><strong>Port-Gentil, Gabon</strong></div>
           <div className="tm-info-row"><span>Email</span><strong><a href="mailto:terrenoireeditions@gmail.com">terrenoireeditions@gmail.com</a></strong></div>
-          <div className="tm-info-row"><span>Téléphone</span><strong>+241 65 34 88 87 / +241 76 59 35 35</strong></div>
+          <div className="tm-info-row"><span>Téléphone</span><strong>+241 65 34 88 87</strong></div>
+          <div className="tm-info-row"><span>WhatsApp</span><strong>+241 76 59 35 35</strong></div>
           <div className="tm-info-row"><span>Directeur de la publication</span><strong>Terre Noire Éditions</strong></div>
         </div>
         <p>

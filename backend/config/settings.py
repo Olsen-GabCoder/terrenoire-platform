@@ -272,10 +272,16 @@ LOGO_URL = os.getenv('LOGO_URL') or f"{os.getenv('FRONTEND_URL', 'http://localho
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL') or os.getenv('EMAIL_HOST_USER') or 'noreply@terrenoireeditions.com'
 ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'terrenoireeditions@gmail.com')
 
-# SMTP : utilisé si EMAIL_HOST et EMAIL_HOST_USER sont définis (dev et prod)
+# Envoi des e-mails, par ordre de priorité :
+# 1. API HTTP Brevo si BREVO_API_KEY est défini (recommandé : Render bloque le SMTP sur les offres gratuites)
+# 2. SMTP si EMAIL_HOST et EMAIL_HOST_USER sont définis
+# 3. Console en dev, aucun envoi en prod (un avertissement est journalisé au démarrage)
+BREVO_API_KEY = os.getenv('BREVO_API_KEY', '').strip()
 _email_host = os.getenv('EMAIL_HOST', '').strip()
 _email_user = os.getenv('EMAIL_HOST_USER', '').strip()
-if _email_host and _email_user:
+if BREVO_API_KEY:
+    EMAIL_BACKEND = 'apps.core.email_backends.BrevoAPIEmailBackend'
+elif _email_host and _email_user:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
     EMAIL_HOST = _email_host
     EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
@@ -286,6 +292,15 @@ if _email_host and _email_user:
 else:
     # Fallback : console en dev, échec silencieux en prod
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.dummy.EmailBackend'
+    if not DEBUG:
+        import logging as _logging
+        _logging.getLogger(__name__).warning(
+            "Aucun envoi d'e-mail configuré (BREVO_API_KEY ou EMAIL_HOST/EMAIL_HOST_USER) : "
+            "les e-mails automatiques ne partiront pas."
+        )
+
+# Envoi en arrière-plan pour ne pas ralentir les requêtes (désactivé pendant les tests)
+EMAIL_ASYNC = os.getenv('EMAIL_ASYNC', 'True') == 'True' and 'test' not in sys.argv
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

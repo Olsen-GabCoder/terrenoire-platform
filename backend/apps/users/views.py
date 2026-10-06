@@ -55,16 +55,27 @@ class UserRegistrationView(generics.CreateAPIView):
         except Exception:
             pass
 
-        # Réponse avec les données de l'utilisateur créé (sans le mot de passe)
+        # L'utilisateur est connecté directement : le frontend n'a plus à refaire
+        # un login (qui échouait quand le nom d'utilisateur contenait des majuscules,
+        # car il est enregistré en minuscules).
+        from rest_framework_simplejwt.tokens import RefreshToken
+        from .jwt_cookie_views import _set_auth_cookies
+        refresh = RefreshToken.for_user(user)
+        access = str(refresh.access_token)
+
         headers = self.get_success_headers(serializer.data)
-        return Response(
+        response = Response(
             {
                 'message': 'Inscription réussie !',
-                'user': UserDetailSerializer(user, context=self.get_serializer_context()).data
+                'user': UserDetailSerializer(user, context=self.get_serializer_context()).data,
+                'access': access,
+                'refresh': str(refresh),
             },
             status=status.HTTP_201_CREATED,
             headers=headers
         )
+        _set_auth_cookies(response, access, str(refresh))
+        return response
 
     def perform_create(self, serializer):
         """Sauvegarde l'instance d'utilisateur"""
@@ -225,6 +236,14 @@ class ForgotPasswordView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+def _notify_password_changed(user):
+    try:
+        from apps.core.email import send_password_changed
+        send_password_changed(user)
+    except Exception:
+        pass
+
+
 class ResetPasswordView(APIView):
     """
     Réinitialisation du mot de passe avec token.
@@ -258,6 +277,7 @@ class ResetPasswordView(APIView):
         user.set_password(new_password)
         user.save()
         revoke_user_tokens(user)
+        _notify_password_changed(user)
         return Response({'message': 'Mot de passe réinitialisé avec succès.'}, status=status.HTTP_200_OK)
 
 

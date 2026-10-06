@@ -8,6 +8,17 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import TnAlert from '../components/ui/TnAlert';
 import '../styles/Checkout.css';
 
+const OPERATOR_NAMES = { moov_money: 'Moov Money', airtel_money: 'Airtel Money' };
+
+/** Numéro gabonais au format local à 9 chiffres (accepte +241 / 241 / 8 chiffres). */
+const normalizeGabonPhone = (value) => {
+  let digits = String(value || '').replace(/\D/g, '');
+  if (digits.startsWith('00241')) digits = digits.slice(5);
+  else if (digits.startsWith('241') && digits.length > 9) digits = digits.slice(3);
+  if (digits.length === 8) digits = `0${digits}`;
+  return digits;
+};
+
 const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -115,8 +126,10 @@ const Checkout = () => {
   };
 
   const isMobileMoney = paymentMethod === 'moov_money' || paymentMethod === 'airtel_money';
-  const phoneDigits = phoneForPayment.replace(/\D/g, '');
-  const isPhoneValid = phoneDigits.length >= 8 && phoneDigits.length <= 9;
+  const phoneDigits = normalizeGabonPhone(phoneForPayment);
+  const detectedOperator = phoneDigits.startsWith('06') ? 'moov_money' : phoneDigits.startsWith('07') ? 'airtel_money' : null;
+  const operatorMismatch = isMobileMoney && phoneDigits.length === 9 && detectedOperator && detectedOperator !== paymentMethod;
+  const isPhoneValid = phoneDigits.length === 9 && !operatorMismatch;
   const canSubmit = !isProcessing && (!isMobileMoney || isPhoneValid);
 
   const handleSubmit = async (e) => {
@@ -124,7 +137,9 @@ const Checkout = () => {
     setError('');
 
     if (isMobileMoney && !isPhoneValid) {
-      setError('Veuillez saisir un numéro de téléphone valide (8 ou 9 chiffres).');
+      setError(operatorMismatch
+        ? `Ce numéro est un numéro ${OPERATOR_NAMES[detectedOperator]} : choisissez ${OPERATOR_NAMES[detectedOperator]} comme mode de paiement.`
+        : 'Veuillez saisir un numéro de téléphone valide (8 ou 9 chiffres).');
       return;
     }
 
@@ -441,13 +456,20 @@ const Checkout = () => {
                       id="phone_payment"
                       className="chk-pay__phone-input"
                       placeholder="07 XX XX XX"
-                      maxLength="11"
+                      maxLength="17"
                       value={phoneForPayment}
-                      onChange={(e) => setPhoneForPayment(e.target.value.replace(/[^\d\s]/g, ''))}
+                      onChange={(e) => setPhoneForPayment(e.target.value.replace(/[^\d\s+]/g, ''))}
                     />
                   </div>
-                  <p className="chk-pay__phone-hint">
-                    {isPhoneValid
+                  <p className={`chk-pay__phone-hint${operatorMismatch ? ' chk-pay__phone-hint--error' : ''}`}>
+                    {operatorMismatch ? (
+                      <>
+                        Ce numéro est un numéro {OPERATOR_NAMES[detectedOperator]}.{' '}
+                        <button type="button" className="chk-pay__switch" onClick={() => setPaymentMethod(detectedOperator)}>
+                          Payer avec {OPERATOR_NAMES[detectedOperator]}
+                        </button>
+                      </>
+                    ) : isPhoneValid
                       ? 'Vous recevrez une demande de validation sur ce numéro.'
                       : phoneForPayment.length > 0
                         ? 'Le numéro doit comporter 8 ou 9 chiffres.'

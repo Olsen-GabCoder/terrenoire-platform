@@ -82,9 +82,17 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await authAPI.register(userData);
-      
+
       if (response.status === 201) {
-        return await login(userData.username, userData.password);
+        // Le backend renvoie directement la session : pas de second login
+        const { access, refresh, user: newUser } = response.data || {};
+        if (access && newUser) {
+          tokenStorage.setTokens(access, refresh);
+          setUser(newUser);
+          return { success: true, user: newUser };
+        }
+        // Repli : se connecter avec le nom d'utilisateur tel qu'enregistré (en minuscules)
+        return await login(newUser?.username || userData.username, userData.password);
       }
       
       return { success: false, error: 'Erreur lors de l\'inscription' };

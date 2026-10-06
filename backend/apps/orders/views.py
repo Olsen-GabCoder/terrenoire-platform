@@ -30,6 +30,9 @@ from .services.payment_finalizer import apply_bamboo_result
 
 logger = logging.getLogger('bamboo_pay')
 
+# Un paiement Mobile Money non confirmé après ce délai est considéré expiré
+PAYMENT_EXPIRATION_DELAY = timedelta(minutes=10)
+
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -217,6 +220,40 @@ class PaymentCheckStatusThrottle(UserRateThrottle):
     rate = '20/min'
 
 
+# Préfixes mobiles gabonais (numéros à 9 chiffres commençant par 0)
+OPERATOR_PREFIXES = {
+    'airtel_money': ('07',),
+    'moov_money': ('06',),
+}
+OPERATOR_LABELS = {'airtel_money': 'Airtel Money', 'moov_money': 'Moov Money'}
+
+
+def normalize_gabon_phone(raw_phone, operator):
+    """
+    Normalise un numéro gabonais au format local à 9 chiffres (0XXXXXXXX).
+    Accepte « +241 74 30 16 39 », « 24174301639 », « 74301639 », « 074301639 ».
+    Retourne (numéro, message_erreur).
+    """
+    digits = ''.join(c for c in str(raw_phone) if c.isdigit())
+    if digits.startswith('00241'):
+        digits = digits[5:]
+    elif digits.startswith('241') and len(digits) > 9:
+        digits = digits[3:]
+    if len(digits) == 8:
+        digits = '0' + digits
+    if len(digits) != 9 or not digits.startswith('0'):
+        return None, 'Numéro invalide : saisissez un numéro gabonais à 8 ou 9 chiffres (ex. 07 XX XX XX).'
+    prefixes = OPERATOR_PREFIXES.get(operator, ())
+    if prefixes and not digits.startswith(prefixes):
+        other = 'airtel_money' if operator == 'moov_money' else 'moov_money'
+        return None, (
+            f"Ce numéro ne correspond pas à {OPERATOR_LABELS[operator]} "
+            f"(numéros en {' / '.join(p + 'X' for p in prefixes)}). "
+            f"Choisissez {OPERATOR_LABELS[other]} ou un autre numéro."
+        )
+    return digits, None
+
+
 class PaymentInitiateView(APIView):
     """POST /api/payments/initiate/ — Initie un paiement Bamboo Pay."""
     permission_classes = [IsAuthenticated]
@@ -239,21 +276,9 @@ class PaymentInitiateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Validation du numero de telephone
-        phone_digits = ''.join(c for c in phone if c.isdigit())
-        if len(phone_digits) < 8 or len(phone_digits) > 9:
-            return Response(
-                {'error': 'Le numéro de téléphone doit comporter 8 ou 9 chiffres.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        if len(phone_digits) == 8:
-            phone_digits = '0' + phone_digits
-        if not phone_digits[0] == '0':
-            return Response(
-                {'error': 'Le numéro de téléphone doit commencer par 0.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        phone = phone_digits
+        phone, phone_error = normalize_gabon_phone(phone, operator)
+        if phone_error:
+            return Response({'error': phone_error}, status=status.HTTP_400_BAD_REQUEST)
 
         # Verrou sur la commande : deux clics simultanés ne doivent pas
         # déclencher deux demandes de paiement (double push USSD).
@@ -366,25 +391,6 @@ class PaymentCheckStatusView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # Auto-expiration : PENDING > 10 minutes
-        EXPIRATION_DELAY = timedelta(minutes=10)
-        if payment.status == 'PENDING' and \
-           payment.created_at < timezone.now() - EXPIRATION_DELAY:
-            Payment.objects.filter(pk=payment.pk, status='PENDING').update(
-                status='EXPIRED', finalized_at=timezone.now()
-            )
-            payment.refresh_from_db()
-            logger.info(
-                "payment.auto_expired ref=%s age=%s",
-                bamboo_ref, timezone.now() - payment.created_at
-            )
-            return Response({
-                'bamboo_ref': payment.transaction_id,
-                'status': 'EXPIRED',
-                'finalized_at': payment.finalized_at,
-                'message': 'Paiement expiré après 10 minutes sans confirmation.',
-            })
-
         # Idempotence : si deja final, retourner sans re-appeler Bamboo
         if payment.is_final:
             return Response({
@@ -393,37 +399,52 @@ class PaymentCheckStatusView(APIView):
                 'finalized_at': payment.finalized_at,
             })
 
-        # Appeler Bamboo Pay check-status
+        expired_locally = payment.created_at < timezone.now() - PAYMENT_EXPIRATION_DELAY
+
+        # Toujours interroger Bamboo avant de conclure : un client peut valider
+        # le paiement sur son téléphone juste avant l'expiration.
         try:
             service = get_bamboo_service()
             result = service.check_status(bamboo_ref)
 
-            # Handle transaction not found at Bamboo
             if result.get('code') == 404 or not result.get('transaction'):
-                logger.error("bamboo.transaction_not_found ref=%s", bamboo_ref)
-                return Response(
-                    {'error': 'Transaction introuvable côté Bamboo Pay.'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-
-            payment = apply_bamboo_result(payment.pk, result, source='check_status')
-
-            return Response({
-                'bamboo_ref': payment.transaction_id,
-                'status': payment.status,
-                'finalized_at': payment.finalized_at,
-            })
-
+                # Juste après l'initiation, Bamboo peut ne pas encore connaître la
+                # transaction : ce n'est pas un échec, on continue d'attendre.
+                logger.info("bamboo.transaction_not_found_yet ref=%s", bamboo_ref)
+            else:
+                payment = apply_bamboo_result(payment.pk, result, source='check_status')
         except BambooPayError as e:
             logger.warning(
                 "payment.check_temporary_error ref=%s err=%s — returning PENDING",
                 bamboo_ref, str(e)
             )
-            return Response({
-                'bamboo_ref': bamboo_ref,
-                'status': 'PENDING',
-                'message': 'Verification temporairement indisponible, nouvelle tentative en cours.',
-            })
+            if not expired_locally:
+                return Response({
+                    'bamboo_ref': bamboo_ref,
+                    'status': 'PENDING',
+                    'message': 'Verification temporairement indisponible, nouvelle tentative en cours.',
+                })
+
+        # Auto-expiration : toujours PENDING chez Bamboo après 10 minutes
+        if payment.status == 'PENDING' and expired_locally:
+            Payment.objects.filter(pk=payment.pk, status='PENDING').update(
+                status='EXPIRED', finalized_at=timezone.now()
+            )
+            payment.refresh_from_db()
+            logger.info("payment.auto_expired ref=%s", bamboo_ref)
+            if payment.status == 'EXPIRED':
+                return Response({
+                    'bamboo_ref': payment.transaction_id,
+                    'status': 'EXPIRED',
+                    'finalized_at': payment.finalized_at,
+                    'message': 'Paiement expiré après 10 minutes sans confirmation.',
+                })
+
+        return Response({
+            'bamboo_ref': payment.transaction_id,
+            'status': payment.status,
+            'finalized_at': payment.finalized_at,
+        })
 
 
 def _webhook_token_is_valid(request):

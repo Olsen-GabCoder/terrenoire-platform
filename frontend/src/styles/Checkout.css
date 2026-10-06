@@ -567,3 +567,18 @@
     animation: none !important;
   }
 }
+
+/* Numéro qui ne correspond pas à l'opérateur choisi */
+.chk-pay__phone-hint--error {
+  color: var(--ds-error, #c62828);
+}
+.chk-pay__switch {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--tn-orange);
+  text-decoration: underline;
+  cursor: pointer;
+}

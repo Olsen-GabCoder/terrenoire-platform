@@ -328,16 +328,25 @@ class BookViewSet(CatalogWritePermissionMixin, viewsets.ModelViewSet):
         Selection editoriale (is_featured=True).
         Fallback : top popularite si aucun livre n'est marque featured.
         """
+        from apps.core.models import SiteConfig
+        from .selection import pick_rotating_selection, current_period
+
+        config = SiteConfig.get_config()
+        period = current_period(config.selection_rotation_hours)
         cache_key = 'books_featured'
-        data = cache.get(cache_key)
-        if data is None:
-            qs = self.get_queryset().filter(available=True, is_featured=True)
-            if not qs.exists():
-                qs = self.get_queryset().filter(available=True).order_by('-popularity_score')
-            featured = qs[:6]
-            serializer = BookListSerializer(featured, many=True, context={'request': request})
-            data = serializer.data
-            cache.set(cache_key, data, getattr(settings, 'CACHE_BOOKS_TTL', 300))
+        cached = cache.get(cache_key)
+        # Le cache est invalidé dès qu'on change de période (nouveau tirage)
+        if isinstance(cached, dict) and cached.get('period') == period:
+            return Response(cached['data'])
+
+        featured = pick_rotating_selection(
+            self.get_queryset().filter(available=True),
+            source=config.selection_source,
+            period=period,
+            size=6,
+        )
+        data = BookListSerializer(featured, many=True, context={'request': request}).data
+        cache.set(cache_key, {'period': period, 'data': data}, getattr(settings, 'CACHE_BOOKS_TTL', 300))
         return Response(data)
 
     @action(detail=False, methods=['get'], url_path='bestsellers')

@@ -1,0 +1,16 @@
+{% extends "emails/base.html" %}
+{% block title %}Nouveau manuscrit{% endblock %}
+{% block content %}
+<p>Un nouveau manuscrit vient d'être soumis sur le site.</p>
+
+<div class="highlight">
+  <strong>&laquo; {{ manuscript.title }} &raquo;</strong><br>
+  Auteur : {{ manuscript.author_name }}{% if manuscript.pen_name %} ({{ manuscript.pen_name }}){% endif %}<br>
+  E-mail : {{ manuscript.email }}{% if manuscript.phone_number %} &middot; Tél. {{ manuscript.phone_number }}{% endif %}<br>
+  Genre : {{ manuscript.get_genre_display }}{% if manuscript.page_count %} &middot; {{ manuscript.page_count }} pages{% endif %}
+</div>
+
+{% if manuscript.description %}<p>{{ manuscript.description|truncatechars:600 }}</p>{% endif %}
+
+<p><a href="{{ frontend_url }}/admin-dashboard/manuscripts" class="btn">Voir les manuscrits</a></p>
+{% endblock %}

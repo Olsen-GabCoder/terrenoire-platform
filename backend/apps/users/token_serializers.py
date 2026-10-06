@@ -24,5 +24,11 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
                 # Remplacer la valeur du champ username par le vrai username
                 attrs['username'] = user.username
             # Sinon, l'erreur sera gérée par la validation parente
+        elif username_or_email:
+            # Les noms d'utilisateur sont enregistrés en minuscules à l'inscription :
+            # « Olsen » doit permettre de se connecter au compte « olsen ».
+            user = User.objects.filter(username__iexact=username_or_email).order_by('-is_active', 'id').first()
+            if user is not None:
+                attrs['username'] = user.username
         
         return super().validate(attrs)

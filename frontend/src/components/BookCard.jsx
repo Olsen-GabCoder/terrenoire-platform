@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { TnPrice, TnStars, TnBookCover } from './ui';
@@ -12,11 +12,42 @@ const BookCard = ({ book, featured = false }) => {
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  // Affiche le choix papier / ebook au lieu d'ajouter directement le papier
+  const [choosingFormat, setChoosingFormat] = useState(false);
+  const navigate = useNavigate();
 
-  const handleAddToCart = (e) => {
+  const stop = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart(book);
+  };
+
+  const hasEbookOffer = !!book.has_ebook && book.ebook_price != null;
+  const paperInCart = isInCart(book.id, 'PAPIER');
+  const ebookInCart = isInCart(book.id, 'EBOOK');
+
+  const handleAddToCart = (e) => {
+    stop(e);
+    if (hasEbookOffer) {
+      setChoosingFormat(true);
+    } else {
+      addToCart(book, 1, 'PAPIER');
+    }
+  };
+
+  const handleChooseFormat = (e, format) => {
+    stop(e);
+    addToCart(book, 1, format);
+    setChoosingFormat(false);
+  };
+
+  const handleCancelChoice = (e) => {
+    stop(e);
+    setChoosingFormat(false);
+  };
+
+  const handleReadExcerpt = (e) => {
+    stop(e);
+    navigate(`/books/${book.id}/excerpt-read`);
   };
 
   const handleToggleWishlist = (e) => {
@@ -31,7 +62,8 @@ const BookCard = ({ book, featured = false }) => {
   const price = parseFloat(book.price) || 0;
   const oldPrice = book.has_discount && book.original_price ? parseFloat(book.original_price) : null;
   const liked = isInWishlist(book.id);
-  const inCart = isInCart(book.id);
+  // « Dans le panier » seulement quand tous les formats proposés y sont déjà
+  const inCart = hasEbookOffer ? paperInCart && ebookInCart : paperInCart;
   const oos = !book.available;
   const hasCoverImage = book.cover_image && !imageError;
   const isNew = book.created_at && (Date.now() - new Date(book.created_at).getTime()) < 30 * 24 * 60 * 60 * 1000;
@@ -124,25 +156,62 @@ const BookCard = ({ book, featured = false }) => {
         )}
 
         {/* Price + action */}
-        <div className="tn-book-card__footer">
-          <TnPrice amount={price} oldAmount={oldPrice} size="sm" />
-          {oos ? (
-            <TnButton size="sm" disabled>Indisponible</TnButton>
-          ) : inCart ? (
-            <TnButton variant="dark" size="sm" disabled leftIcon={<i className="fas fa-check" />}>
-              Dans le panier
-            </TnButton>
-          ) : (
-            <TnButton
-              variant="primary"
-              size="sm"
-              onClick={handleAddToCart}
-              leftIcon={<i className="fas fa-bag-shopping" />}
+        {choosingFormat ? (
+          <div className="tn-book-card__formats" role="group" aria-label="Choisir le format">
+            <span className="tn-book-card__formats-label">Quel format ?</span>
+            <button
+              type="button"
+              className="tn-book-card__format"
+              onClick={(e) => handleChooseFormat(e, 'PAPIER')}
+              disabled={paperInCart}
             >
-              Ajouter
-            </TnButton>
-          )}
-        </div>
+              <span><i className="fas fa-book" /> Papier</span>
+              <span className="tn-book-card__format-price">
+                {paperInCart ? 'Dans le panier' : <TnPrice amount={price} size="sm" />}
+              </span>
+            </button>
+            <button
+              type="button"
+              className="tn-book-card__format"
+              onClick={(e) => handleChooseFormat(e, 'EBOOK')}
+              disabled={ebookInCart}
+            >
+              <span><i className="fas fa-tablet-screen-button" /> Ebook</span>
+              <span className="tn-book-card__format-price">
+                {ebookInCart ? 'Dans le panier' : <TnPrice amount={parseFloat(book.ebook_price) || 0} size="sm" />}
+              </span>
+            </button>
+            <button type="button" className="tn-book-card__formats-cancel" onClick={handleCancelChoice}>
+              Annuler
+            </button>
+          </div>
+        ) : (
+          <div className="tn-book-card__footer">
+            <TnPrice amount={price} oldAmount={oldPrice} size="sm" />
+            {oos ? (
+              <TnButton size="sm" disabled>Indisponible</TnButton>
+            ) : inCart ? (
+              <TnButton variant="dark" size="sm" disabled leftIcon={<i className="fas fa-check" />}>
+                Dans le panier
+              </TnButton>
+            ) : (
+              <TnButton
+                variant="primary"
+                size="sm"
+                onClick={handleAddToCart}
+                leftIcon={<i className="fas fa-bag-shopping" />}
+              >
+                Ajouter
+              </TnButton>
+            )}
+          </div>
+        )}
+
+        {book.has_excerpt && !choosingFormat && (
+          <button type="button" className="tn-book-card__excerpt" onClick={handleReadExcerpt}>
+            <i className="fas fa-book-open-reader" /> Lire un extrait
+          </button>
+        )}
       </div>
     </Link>
   );

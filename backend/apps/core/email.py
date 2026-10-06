@@ -25,11 +25,27 @@ def _get_logo_base64():
     return None
 
 
+def _send_message(msg, subject, to_emails, fail_silently):
+    try:
+        msg.send(fail_silently=False)
+        logger.info(f"Email envoyé: {subject} -> {to_emails}")
+        return True
+    except Exception as e:
+        logger.exception(f"Erreur envoi email {subject}: {e}")
+        if not fail_silently:
+            raise
+        return False
+
+
 def send_templated_email(subject, template_name, context, to_emails, attachments=None, fail_silently=True):
     """
     Envoie un email à partir d'un template HTML.
     Génère aussi une version texte pour les clients qui ne supportent pas le HTML.
     attachments: liste de tuples (filename, content, mimetype) ou (filename, content)
+
+    Si settings.EMAIL_ASYNC est actif (et fail_silently=True), le message est
+    préparé immédiatement puis envoyé dans un thread : la requête de
+    l'utilisateur n'attend pas le serveur d'e-mails.
     """
     if not to_emails:
         return False
@@ -58,9 +74,13 @@ def send_templated_email(subject, template_name, context, to_emails, attachments
                 content = att[1].getvalue() if hasattr(att[1], 'getvalue') else (att[1].read() if hasattr(att[1], 'read') else att[1])
                 mimetype = att[2] if len(att) >= 3 else 'application/pdf'
                 msg.attach(filename, content, mimetype)
-        msg.send(fail_silently=fail_silently)
-        logger.info(f"Email envoyé: {subject} -> {to_emails}")
-        return True
+        if fail_silently and getattr(settings, 'EMAIL_ASYNC', False):
+            import threading
+            threading.Thread(
+                target=_send_message, args=(msg, subject, to_emails, True), daemon=True
+            ).start()
+            return True
+        return _send_message(msg, subject, to_emails, fail_silently)
     except Exception as e:
         logger.exception(f"Erreur envoi email {subject}: {e}")
         if not fail_silently:
@@ -296,7 +316,7 @@ def send_manuscript_acknowledgment(manuscript):
 
 def send_manuscript_status_changed(manuscript, old_status, new_status):
     """Notifier l'auteur du changement de statut de son manuscrit."""
-    STATUS_LABELS = {'PENDING': 'En attente', 'REVIEWING': 'En cours d\'examen', 'ACCEPTED': 'Accepte', 'REJECTED': 'Refuse'}
+    STATUS_LABELS = {'PENDING': 'En attente', 'REVIEWING': 'En cours d\'examen', 'ACCEPTED': 'Accepté', 'REJECTED': 'Refusé'}
     context = {
         'author_name': manuscript.author_name,
         'title': manuscript.title,
@@ -398,3 +418,32 @@ def send_order_cancelled_admin(order):
     return send_templated_email(
         subject, 'order_cancelled_admin', context, [settings.ADMIN_EMAIL]
     )
+
+
+def send_password_changed(user):
+    """Alerte de sécurité : le mot de passe du compte vient d'être modifié."""
+    if not user or not getattr(user, 'email', None):
+        return False
+    from zoneinfo import ZoneInfo
+    from django.utils import timezone
+    changed_at = timezone.now().astimezone(ZoneInfo('Africa/Libreville'))
+    context = {
+        'user': user,
+        'changed_at': changed_at.strftime('%d/%m/%Y à %H:%M'),
+        'frontend_url': settings.FRONTEND_URL,
+    }
+    subject = "Votre mot de passe a été modifié — Terre Noire Éditions"
+    return send_templated_email(subject, 'password_changed', context, [user.email])
+
+
+def send_manuscript_admin_notification(manuscript):
+    """Prévenir l'équipe éditoriale qu'un nouveau manuscrit a été soumis."""
+    admin_email = getattr(settings, 'ADMIN_EMAIL', None)
+    if not admin_email:
+        return False
+    context = {
+        'manuscript': manuscript,
+        'frontend_url': settings.FRONTEND_URL,
+    }
+    subject = "Nouveau manuscrit reçu — Terre Noire Éditions"
+    return send_templated_email(subject, 'manuscript_admin', context, [admin_email])

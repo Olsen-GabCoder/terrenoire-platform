@@ -1,25 +1,25 @@
 {% extends "emails/base.html" %}
-{% block title %}Mise a jour manuscrit{% endblock %}
+{% block title %}Mise à jour de votre manuscrit{% endblock %}
 {% block content %}
 <p>Bonjour {{ author_name }},</p>
 
-<p>Le statut de votre manuscrit <strong>&laquo; {{ title }} &raquo;</strong> a ete mis a jour.</p>
+<p>Le traitement de votre manuscrit <strong>&laquo; {{ title }} &raquo;</strong> vient d'avancer d'une étape.</p>
 
 <div class="highlight">
   <strong>{{ old_status }}</strong> &rarr; <strong>{{ new_status }}</strong>
 </div>
 
 {% if new_status_raw == "REVIEWING" %}
-<p>Votre manuscrit est actuellement en cours d'examen par notre comite de lecture. Nous reviendrons vers vous des que possible avec notre decision.</p>
+<p>Votre manuscrit est actuellement en cours d'examen par notre comité de lecture. Nous reviendrons vers vous dès que possible avec notre décision.</p>
 {% elif new_status_raw == "ACCEPTED" %}
-<h3>Felicitations !</h3>
-<p>Nous avons le plaisir de vous informer que votre manuscrit a ete <strong>accepte</strong> par notre comite de lecture. Un membre de notre equipe editoriale vous contactera prochainement pour discuter des prochaines etapes de la publication.</p>
+<h3>Félicitations !</h3>
+<p>Nous avons le plaisir de vous informer que votre manuscrit a été <strong>accepté</strong> par notre comité de lecture. Un membre de notre équipe éditoriale vous contactera prochainement pour discuter des prochaines étapes de la publication.</p>
 {% elif new_status_raw == "REJECTED" %}
-<p>Apres examen attentif par notre comite de lecture, nous avons le regret de vous informer que votre manuscrit n'a pas ete retenu pour publication. Cette decision ne remet pas en cause la qualite de votre travail — notre ligne editoriale est tres specifique.</p>
-<p>Nous vous encourageons a continuer d'ecrire et vous souhaitons le meilleur pour vos projets litteraires.</p>
+<p>Après examen attentif par notre comité de lecture, nous avons le regret de vous informer que votre manuscrit n'a pas été retenu pour publication. Cette décision ne remet pas en cause la qualité de votre travail : notre ligne éditoriale est très spécifique.</p>
+<p>Nous vous encourageons à continuer d'écrire et vous souhaitons le meilleur pour vos projets littéraires.</p>
 {% else %}
-<p>Pour toute question, n'hesitez pas a nous contacter par email ou par telephone.</p>
+<p>Pour toute question, n'hésitez pas à nous contacter par e-mail ou par téléphone.</p>
 {% endif %}
 
-<p>Cordialement,<br><strong>L'equipe Terre Noire Editions</strong></p>
+<p>Cordialement,<br><strong>L'équipe Terre Noire Éditions</strong></p>
 {% endblock %}

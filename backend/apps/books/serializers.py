@@ -78,6 +78,7 @@ class BookListSerializer(serializers.ModelSerializer):
 
     # Champs calculés
     has_pdf = serializers.SerializerMethodField()
+    has_excerpt = serializers.SerializerMethodField()
 
     # === NOUVEAUX CHAMPS ===
     # Promotions et prix
@@ -145,11 +146,15 @@ class BookListSerializer(serializers.ModelSerializer):
             'popularity_score',
             'trending_score',
             'has_pdf',
+            'has_excerpt',
         ]
         read_only_fields = ['id', 'slug', 'created_at']
 
     def get_has_pdf(self, obj):
         return bool(obj.pdf_file)
+
+    def get_has_excerpt(self, obj):
+        return bool(obj.excerpt_pdf)
 
     def get_rating_display(self, obj):
         """Retourne la note formatée (ex: "4.5/5")"""

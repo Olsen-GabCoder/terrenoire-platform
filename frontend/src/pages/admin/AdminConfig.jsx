@@ -12,7 +12,10 @@ const AdminConfig = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [config, setConfig] = useState({ shipping_free_threshold: '', shipping_cost: '' });
+  const [config, setConfig] = useState({
+    shipping_free_threshold: '', shipping_cost: '',
+    selection_rotation_hours: 24, selection_source: 'all',
+  });
 
   useEffect(() => { fetchConfig(); }, []);
 
@@ -20,7 +23,12 @@ const AdminConfig = () => {
     try {
       setLoading(true); setError(null);
       const r = await api.get('/config/delivery/');
-      setConfig({ shipping_free_threshold: r.data.shipping_free_threshold, shipping_cost: r.data.shipping_cost });
+      setConfig({
+        shipping_free_threshold: r.data.shipping_free_threshold,
+        shipping_cost: r.data.shipping_cost,
+        selection_rotation_hours: r.data.selection_rotation_hours ?? 24,
+        selection_source: r.data.selection_source || 'all',
+      });
     } catch { setError('Impossible de charger la configuration'); }
     finally { setLoading(false); }
   };
@@ -37,6 +45,8 @@ const AdminConfig = () => {
       await api.patch('/config/delivery/', {
         shipping_free_threshold: Number(config.shipping_free_threshold),
         shipping_cost: Number(config.shipping_cost),
+        selection_rotation_hours: Number(config.selection_rotation_hours),
+        selection_source: config.selection_source,
       });
       toast.success('Configuration mise à jour');
     } catch (err) {
@@ -80,6 +90,40 @@ const AdminConfig = () => {
                   </label>
                   <input className="tn-input" name="shipping_free_threshold" type="number" min="0" step="1000" value={config.shipping_free_threshold} onChange={handleChange} required />
                   <p style={{ fontSize: 11, color: 'var(--tn-gray-500)', marginTop: 4 }}>Livraison offerte au-dessus de ce montant</p>
+                </div>
+              </div>
+              <div style={{ padding: '20px 24px', borderTop: '1px solid var(--tn-gray-200)', borderBottom: '1px solid var(--tn-gray-200)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <i className="fas fa-star" style={{ color: 'var(--tn-orange)', fontSize: 18 }} />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Sélection de la page d&apos;accueil</h3>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--tn-gray-500)' }}>Tirée au hasard et renouvelée automatiquement</p>
+                </div>
+              </div>
+              <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--tn-gray-700)', marginBottom: 6 }}>
+                    Renouvellement
+                  </label>
+                  <select className="tn-input" name="selection_rotation_hours" value={String(config.selection_rotation_hours)} onChange={handleChange}>
+                    <option value="24">Toutes les 24 heures</option>
+                    <option value="72">Tous les 3 jours</option>
+                    <option value="168">Chaque semaine</option>
+                    <option value="0">Jamais (sélection fixe)</option>
+                    {!['24', '72', '168', '0'].includes(String(config.selection_rotation_hours)) && (
+                      <option value={String(config.selection_rotation_hours)}>Toutes les {config.selection_rotation_hours} heures</option>
+                    )}
+                  </select>
+                  <p style={{ fontSize: 11, color: 'var(--tn-gray-500)', marginTop: 4 }}>Un nouveau tirage a lieu à chaque période</p>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--tn-gray-700)', marginBottom: 6 }}>
+                    Livres éligibles
+                  </label>
+                  <select className="tn-input" name="selection_source" value={config.selection_source} onChange={handleChange}>
+                    <option value="all">Tous les livres disponibles</option>
+                    <option value="featured">Livres marqués « Sélection »</option>
+                  </select>
+                  <p style={{ fontSize: 11, color: 'var(--tn-gray-500)', marginTop: 4 }}>Avec les livres marqués, il en faut plus de 6 pour que la sélection varie</p>
                 </div>
               </div>
               <div style={{ padding: '16px 24px', borderTop: '1px solid var(--tn-gray-100)', background: 'var(--tn-cream-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

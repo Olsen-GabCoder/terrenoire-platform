@@ -1,3 +1,5 @@
+from decimal import Decimal, InvalidOperation
+
 from rest_framework import status as http_status
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
@@ -23,29 +25,53 @@ class DeliveryConfigView(APIView):
             return [IsAdminUser()]
         return [AllowAny()]
 
+    @staticmethod
+    def _serialize(config):
+        return {
+            'shipping_free_threshold': float(config.shipping_free_threshold),
+            'shipping_cost': float(config.shipping_cost),
+            'selection_rotation_hours': config.selection_rotation_hours,
+            'selection_source': config.selection_source,
+        }
+
     def get(self, request):
         cache_key = 'delivery_config'
         data = cache.get(cache_key)
         if data is None:
-            config = SiteConfig.get_config()
-            data = {
-                'shipping_free_threshold': float(config.shipping_free_threshold),
-                'shipping_cost': float(config.shipping_cost),
-            }
+            data = self._serialize(SiteConfig.get_config())
             cache.set(cache_key, data, getattr(settings, 'CACHE_DELIVERY_TTL', 600))
         return Response(data)
 
     def patch(self, request):
         config = SiteConfig.get_config()
-        if 'shipping_free_threshold' in request.data:
-            config.shipping_free_threshold = request.data['shipping_free_threshold']
-        if 'shipping_cost' in request.data:
-            config.shipping_cost = request.data['shipping_cost']
+        errors = {}
+        for field in ('shipping_free_threshold', 'shipping_cost'):
+            if field in request.data:
+                try:
+                    value = Decimal(str(request.data[field]))
+                    if value < 0:
+                        raise InvalidOperation
+                    setattr(config, field, value)
+                except (InvalidOperation, ValueError):
+                    errors[field] = 'Montant invalide.'
+        if 'selection_rotation_hours' in request.data:
+            try:
+                hours = int(request.data['selection_rotation_hours'])
+                if hours < 0 or hours > 24 * 365:
+                    raise ValueError
+                config.selection_rotation_hours = hours
+            except (TypeError, ValueError):
+                errors['selection_rotation_hours'] = "Nombre d'heures invalide."
+        if 'selection_source' in request.data:
+            source = request.data['selection_source']
+            if source not in dict(SiteConfig.SELECTION_SOURCE_CHOICES):
+                errors['selection_source'] = 'Valeur invalide.'
+            else:
+                config.selection_source = source
+        if errors:
+            return Response(errors, status=http_status.HTTP_400_BAD_REQUEST)
         config.save()
-        return Response({
-            'shipping_free_threshold': float(config.shipping_free_threshold),
-            'shipping_cost': float(config.shipping_cost),
-        })
+        return Response(self._serialize(config))
 
 
 class GlobalSearchView(APIView):

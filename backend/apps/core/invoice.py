@@ -256,7 +256,7 @@ def generate_order_invoice_pdf(order):
     # ─────────────────────────────────────────────
     elements.append(HRFlowable(width="100%", thickness=1, color=TN_BLACK, spaceBefore=4, spaceAfter=10))
     elements.append(Paragraph("TERRE NOIRE EDITIONS", ParagraphStyle('FooterBrand', parent=s_footer, fontSize=10, textColor=TN_BLACK, fontName='Helvetica-Bold')))
-    elements.append(Paragraph("Port-Gentil, Gabon &middot; olsenkampala@gmail.com &middot; +241 65 34 88 87", s_footer))
+    elements.append(Paragraph("Port-Gentil, Gabon &middot; olsenkampala@gmail.com &middot; Tél. +241 65 34 88 87 &middot; WhatsApp +241 76 59 35 35", s_footer))
     elements.append(Spacer(1, 4 * mm))
     elements.append(Paragraph(
         "&laquo; Demain s'ecrit aujourd'hui &raquo;",

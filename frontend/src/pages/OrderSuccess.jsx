@@ -128,7 +128,7 @@ const OrderSuccess = () => {
           <h2><i className="fas fa-list-check" /> Et maintenant ?</h2>
           <ol>
             <li>
-              <strong>Nous préparons votre commande</strong> — vous recevrez les instructions de paiement (Mobicash, Airtel Money, espèces ou carte Visa)
+              <strong>Nous préparons votre commande</strong> — votre paiement Mobile Money (Moov Money ou Airtel Money) est confirmé par e-mail
             </li>
             <li>
               <strong>Votre commande prend la route</strong> — une fois le paiement confirmé, nous expédions sous 5 à 10 jours ouvrés
@@ -142,10 +142,8 @@ const OrderSuccess = () => {
         <div className="os-payment">
           <h3><i className="fas fa-credit-card" /> Moyens de paiement acceptés</h3>
           <div className="os-payment-icons">
-            <span><i className="fas fa-mobile-alt" /> Mobicash</span>
+            <span><i className="fas fa-mobile-alt" /> Moov Money</span>
             <span><i className="fas fa-mobile-alt" /> Airtel Money</span>
-            <span><i className="fas fa-money-bill-wave" /> Espèces</span>
-            <span><i className="fab fa-cc-visa" /> Cartes Visa</span>
           </div>
         </div>
 
@@ -178,8 +176,9 @@ const OrderSuccess = () => {
         <div className="os-support">
           <p>
             <i className="fas fa-headset"></i>
-            Une question ? Contactez notre service client au{' '}
-            <a href="tel:+24165348887">+241 65 34 88 87</a> ou <a href="tel:+24176593535">+241 76 59 35 35</a>
+            Une question ? Appelez notre service client au{' '}
+            <a href="tel:+24165348887">+241 65 34 88 87</a> ou écrivez-nous sur{' '}
+            <a href="https://wa.me/24176593535" target="_blank" rel="noopener noreferrer">WhatsApp (+241 76 59 35 35)</a>
           </p>
         </div>
         </div>
