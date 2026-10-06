@@ -236,3 +236,155 @@ class BrevoBackendTests(TestCase):
             post.return_value.status_code = 401
             post.return_value.text = 'unauthorized'
             self.assertEqual(BrevoAPIEmailBackend(api_key='k', fail_silently=True).send_messages([msg]), 0)
+
+
+class BambooPayRedirectTests(APITestCase):
+    """Point 9 : paiement BambooPay par redirection (mode A) + callback conforme à la doc."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='buyer9', email='b9@example.com', password='x', phone_number='+24100000009',
+            first_name='Awa', last_name='Ndong',
+        )
+        self.order = Order.objects.create(user=self.user, total_amount=Decimal('5000.50'), subtotal=Decimal('5000.50'))
+        self.client.force_authenticate(self.user)
+
+    def _initiate(self, operator='bamboopay', phone='062000000'):
+        with mock.patch('apps.orders.views.get_bamboo_service') as svc:
+            svc.return_value.initiate_redirect_payment.return_value = {'redirect_url': 'https://pay.bamboo/xyz'}
+            svc.return_value.initiate_instant_payment.return_value = {'reference_bp': 'TXN-B-1', 'status': True}
+            response = self.client.post('/api/payments/initiate/', {
+                'order_id': self.order.id, 'operator': operator, 'phone': phone,
+            }, format='json')
+        return response, svc
+
+    @override_settings(FRONTEND_URL='https://terrenoireeditions.com')
+    def test_initiate_returns_redirect_url_and_tracks_billing_id(self):
+        response, svc = self._initiate()
+        self.assertEqual(response.status_code, 202, response.data)
+        self.assertEqual(response.data['redirect_url'], 'https://pay.bamboo/xyz')
+        kwargs = svc.return_value.initiate_redirect_payment.call_args.kwargs
+        billing_id = kwargs['billing_id']
+        self.assertEqual(response.data['bamboo_ref'], billing_id)
+        self.assertEqual(kwargs['amount'], 5001)  # arrondi au supérieur, entier
+        self.assertEqual(kwargs['return_url'], f'https://terrenoireeditions.com/checkout/paiement/{billing_id}')
+        payment = Payment.objects.get(transaction_id=billing_id)
+        self.assertEqual(payment.provider, 'BAMBOOPAY')
+
+    def test_any_gabon_number_is_accepted_for_bamboopay(self):
+        response, _ = self._initiate(phone='+241 74 30 16 39')
+        self.assertEqual(response.status_code, 202, response.data)
+
+    def test_retry_reuses_redirect_url(self):
+        self._initiate()
+        response, svc = self._initiate()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['redirect_url'], 'https://pay.bamboo/xyz')
+        svc.return_value.initiate_redirect_payment.assert_not_called()
+
+    def test_switching_method_expires_previous_payment(self):
+        self._initiate()
+        response, _ = self._initiate(operator='airtel_money', phone='074000000')
+        self.assertEqual(response.status_code, 202, response.data)
+        statuses = dict(Payment.objects.filter(order=self.order).values_list('provider', 'status'))
+        self.assertEqual(statuses, {'BAMBOOPAY': 'EXPIRED', 'AIRTEL': 'PENDING'})
+
+    def test_redirect_payment_has_longer_expiry(self):
+        self._initiate()
+        payment = Payment.objects.get(order=self.order)
+        Payment.objects.filter(pk=payment.pk).update(created_at=timezone.now() - timedelta(minutes=15))
+        with mock.patch('apps.orders.views.get_bamboo_service') as svc:
+            svc.return_value.check_status.return_value = {'code': 200, 'transaction': {'status': 'pending'}}
+            response = self.client.post(f'/api/payments/check-status/{payment.transaction_id}/')
+        self.assertEqual(response.data['status'], 'PENDING')
+
+
+class BambooCallbackTests(APITestCase):
+    URL = '/api/payments/webhook/'
+
+    def setUp(self):
+        user = User.objects.create_user(username='cb', email='cb@example.com', password='x', phone_number='+24100000010')
+        self.order = Order.objects.create(user=user, total_amount=Decimal('5000'), subtotal=Decimal('5000'))
+        self.payment = Payment.objects.create(
+            order=self.order, transaction_id='TXN-2025-000381', provider='AIRTEL', status='PENDING',
+            amount=Decimal('5000'), bamboo_response={'reference': 'TN-1-abcd'},
+        )
+        self.payload = {
+            'billingId': 'TXN-2025-000381', 'reference': 'TN-1-abcd', 'numCpte': '074000000',
+            'amount': 5000.0, 'payername': 'Awa', 'status': 'completed', 'reason': 'ok',
+            'paymentType': 'airtel_money', 'description': 'ok', 'idempotency_key': 'key-1',
+        }
+
+    def _post(self, payload, bamboo_status='completed'):
+        with mock.patch('apps.orders.views.get_bamboo_service') as svc:
+            svc.return_value.check_status.return_value = {'code': 200, 'transaction': {'status': bamboo_status}}
+            response = self.client.post(self.URL, payload, format='json')
+        return response, svc
+
+    def test_documented_payload_marks_order_paid(self):
+        response, _ = self._post(self.payload)
+        self.assertEqual(response.status_code, 200)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, 'PAID')
+
+    def test_duplicate_idempotency_key_is_ignored(self):
+        self._post(self.payload, bamboo_status='pending')
+        response, svc = self._post(self.payload)
+        self.assertEqual(response.data['status'], 'duplicate_ignored')
+        svc.return_value.check_status.assert_not_called()
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, 'PENDING')
+
+    def test_merchant_reference_only_is_enough(self):
+        payload = {**self.payload, 'billingId': None, 'idempotency_key': 'key-2'}
+        response, _ = self._post(payload)
+        self.assertEqual(response.status_code, 200)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, 'PAID')
+
+    def test_verification_failure_still_acknowledged(self):
+        from apps.orders.services.bamboo_pay import BambooPayError
+        with mock.patch('apps.orders.views.get_bamboo_service') as svc:
+            svc.return_value.check_status.side_effect = BambooPayError('timeout')
+            response = self.client.post(self.URL, {**self.payload, 'idempotency_key': 'key-3'}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, 'PENDING')
+
+
+class CheckStatusRateLimitTests(APITestCase):
+    def test_bamboo_is_not_called_more_than_every_20_seconds(self):
+        user = User.objects.create_user(username='rl', email='rl@example.com', password='x', phone_number='+24100000011')
+        order = Order.objects.create(user=user, total_amount=Decimal('5000'), subtotal=Decimal('5000'))
+        Payment.objects.create(order=order, transaction_id='TXN-RL', provider='AIRTEL', status='PENDING', amount=Decimal('5000'))
+        self.client.force_authenticate(user)
+        with mock.patch('apps.orders.views.get_bamboo_service') as svc:
+            svc.return_value.check_status.return_value = {'code': 200, 'transaction': {'status': 'pending'}}
+            for _ in range(3):
+                self.assertEqual(self.client.post('/api/payments/check-status/TXN-RL/').data['status'], 'PENDING')
+        self.assertEqual(svc.return_value.check_status.call_count, 1)
+
+
+class BambooServiceRedirectTests(TestCase):
+    @mock.patch.dict('os.environ', {
+        'BAMBOO_PAY_API_URL': 'https://client-v2.bamboopay-ga.com', 'BAMBOO_PAY_MERCHANT_ID': '600123',
+        'BAMBOO_PAY_USERNAME': 'u', 'BAMBOO_PAY_PASSWORD': 'p',
+        'BAMBOO_CALLBACK_URL': 'https://api.example.com/api/payments/webhook/', 'BAMBOO_WEBHOOK_SECRET': 's3cret',
+    })
+    def test_send_payload_matches_documentation(self):
+        from apps.orders.services.bamboo_pay import BambooPayService
+        with mock.patch('apps.orders.services.bamboo_pay.requests.post') as post:
+            post.return_value.status_code = 200
+            post.return_value.json.return_value = {'redirect_url': 'https://pay/x'}
+            result = BambooPayService().initiate_redirect_payment(
+                phone='074000000', amount=5001, payer_name='Awa Ndong', billing_id='TN-1-abcd',
+                matricule='TNE-1', return_url='https://site/checkout/paiement/TN-1-abcd',
+            )
+        self.assertEqual(result['redirect_url'], 'https://pay/x')
+        self.assertEqual(post.call_args.args[0], 'https://client-v2.bamboopay-ga.com/api/send')
+        self.assertEqual(post.call_args.kwargs['json'], {
+            'payerName': 'Awa Ndong', 'matricule': 'TNE-1', 'raisonSociale': None,
+            'billingId': 'TN-1-abcd', 'transactionAmount': '5001', 'merchant_id': '600123',
+            'phone': '074000000', 'return_url': 'https://site/checkout/paiement/TN-1-abcd',
+            'update_status_url': 'https://api.example.com/api/payments/webhook/?token=s3cret',
+        })

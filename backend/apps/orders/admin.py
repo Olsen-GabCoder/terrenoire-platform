@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Order, OrderItem, Payment
+from .models import Order, OrderItem, Payment, PaymentNotification
 
 
 class OrderItemInline(admin.TabularInline):
@@ -44,3 +44,14 @@ class PaymentAdmin(admin.ModelAdmin):
     list_filter = ['provider', 'status']
     search_fields = ['transaction_id', 'order__id']
     readonly_fields = ['created_at']
+
+
+@admin.register(PaymentNotification)
+class PaymentNotificationAdmin(admin.ModelAdmin):
+    """Callbacks reçus de Bamboo Pay (lecture seule, pour le suivi et le support)."""
+    list_display = ['idempotency_key', 'payment', 'received_at']
+    search_fields = ['idempotency_key', 'payment__transaction_id']
+    readonly_fields = ['idempotency_key', 'payment', 'payload', 'received_at']
+
+    def has_add_permission(self, request):
+        return False

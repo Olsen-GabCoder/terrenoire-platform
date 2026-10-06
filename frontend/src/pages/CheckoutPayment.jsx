@@ -7,6 +7,7 @@ import '../styles/CheckoutPayment.css';
 const OPERATOR_LABELS = {
   moov_money: 'Moov Money',
   airtel_money: 'Airtel Money',
+  bamboopay: 'BambooPay',
 };
 
 function maskPhone(phone) {
@@ -35,7 +36,12 @@ const CheckoutPayment = () => {
   const navigate = useNavigate();
   const { isAuthenticated, authChecked } = useAuth();
 
-  const { orderId, operator, phone, amount } = location.state || {};
+  const navState = location.state || {};
+  const { orderId, phone } = navState;
+  // Au retour de la page BambooPay, le state de navigation est perdu : on relit sessionStorage
+  const operator = navState.operator || sessionStorage.getItem('current_payment_operator');
+  const amount = navState.amount || sessionStorage.getItem('current_payment_amount');
+  const isRedirectPayment = operator === 'bamboopay';
 
   const storedOrderId = orderId || sessionStorage.getItem('current_order_id');
   const storedRef = bambooRef || sessionStorage.getItem('current_payment_ref');
@@ -223,11 +229,23 @@ const CheckoutPayment = () => {
             </div>
 
             <span className="cpay-tag cpay-tag--pending">Paiement en cours</span>
-            <h2 className="cpay-heading">En attente de votre validation</h2>
-            <p className="cpay-desc">
-              Vérifiez votre téléphone et saisissez votre code PIN
-              pour confirmer le paiement sur <strong>{operatorLabel}</strong>.
-            </p>
+            {isRedirectPayment ? (
+              <>
+                <h2 className="cpay-heading">Confirmation du paiement BambooPay</h2>
+                <p className="cpay-desc">
+                  Nous vérifions auprès de <strong>BambooPay</strong> que votre paiement
+                  a bien été enregistré. Cela peut prendre quelques instants.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="cpay-heading">En attente de votre validation</h2>
+                <p className="cpay-desc">
+                  Vérifiez votre téléphone et saisissez votre code PIN
+                  pour confirmer le paiement sur <strong>{operatorLabel}</strong>.
+                </p>
+              </>
+            )}
 
             <div className="cpay-info">
               {amount && (
@@ -237,7 +255,7 @@ const CheckoutPayment = () => {
                 </div>
               )}
               <div className="cpay-info-row">
-                <span className="cpay-info-label">Opérateur</span>
+                <span className="cpay-info-label">{isRedirectPayment ? 'Moyen de paiement' : 'Opérateur'}</span>
                 <span className="cpay-info-value">{operatorLabel}</span>
               </div>
               {maskedPhone && (
@@ -263,7 +281,7 @@ const CheckoutPayment = () => {
               <span className="cpay-timer-value">{formatElapsed(elapsed)}</span>
             </div>
             <p className="cpay-expire-note">
-              Le paiement expire après 10 minutes sans confirmation.
+              Le paiement expire après {isRedirectPayment ? 30 : 10} minutes sans confirmation.
             </p>
 
             <div className="cpay-actions">

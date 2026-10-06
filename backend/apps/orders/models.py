@@ -78,12 +78,14 @@ class Payment(models.Model):
         ('AIRTEL', 'Airtel Money'),
         ('CASH', 'Espèces'),
         ('VISA', 'Carte Visa'),
+        ('BAMBOOPAY', 'BambooPay (page de paiement)'),
     ]
 
     # Mapping operateur Bamboo Pay -> provider
     BAMBOO_OPERATOR_MAP = {
         'moov_money': 'MOBICASH',
         'airtel_money': 'AIRTEL',
+        'bamboopay': 'BAMBOOPAY',
     }
 
     STATUS_CHOICES = [
@@ -106,6 +108,8 @@ class Payment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     finalized_at = models.DateTimeField(null=True, blank=True,
                                          help_text="Date de finalisation (success/failed/expired)")
+    last_checked_at = models.DateTimeField(null=True, blank=True,
+                                           help_text="Dernière vérification du statut auprès de Bamboo Pay")
 
     class Meta:
         ordering = ['-created_at']
@@ -117,3 +121,22 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Paiement {self.transaction_id} - {self.status}"
+
+class PaymentNotification(models.Model):
+    """
+    Notification (callback) reçue de Bamboo Pay.
+    Sert à ignorer les doublons : chaque `idempotency_key` n'est traitée qu'une fois.
+    """
+    idempotency_key = models.CharField(max_length=255, unique=True)
+    payment = models.ForeignKey(Payment, null=True, blank=True, on_delete=models.SET_NULL,
+                                related_name='notifications')
+    payload = models.JSONField(default=dict, blank=True)
+    received_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-received_at']
+        verbose_name = "Notification Bamboo Pay"
+        verbose_name_plural = "Notifications Bamboo Pay"
+
+    def __str__(self):
+        return f"Notification {self.idempotency_key}"

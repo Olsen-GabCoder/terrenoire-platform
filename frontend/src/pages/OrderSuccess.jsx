@@ -128,7 +128,7 @@ const OrderSuccess = () => {
           <h2><i className="fas fa-list-check" /> Et maintenant ?</h2>
           <ol>
             <li>
-              <strong>Nous préparons votre commande</strong> — votre paiement Mobile Money (Moov Money ou Airtel Money) est confirmé par e-mail
+              <strong>Nous préparons votre commande</strong> — votre paiement (Moov Money, Airtel Money ou BambooPay) est confirmé par e-mail
             </li>
             <li>
               <strong>Votre commande prend la route</strong> — une fois le paiement confirmé, nous expédions sous 5 à 10 jours ouvrés
@@ -144,6 +144,7 @@ const OrderSuccess = () => {
           <div className="os-payment-icons">
             <span><i className="fas fa-mobile-alt" /> Moov Money</span>
             <span><i className="fas fa-mobile-alt" /> Airtel Money</span>
+            <span><i className="fas fa-lock" /> BambooPay</span>
           </div>
         </div>
 

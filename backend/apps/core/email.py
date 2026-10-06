@@ -25,6 +25,18 @@ def _get_logo_base64():
     return None
 
 
+def run_in_background(func, *args):
+    """
+    Exécute une tâche d'envoi d'e-mails dans un thread si settings.EMAIL_ASYNC,
+    sinon immédiatement (tests, ou EMAIL_ASYNC=False).
+    """
+    if getattr(settings, 'EMAIL_ASYNC', False):
+        import threading
+        threading.Thread(target=func, args=args, daemon=True).start()
+    else:
+        func(*args)
+
+
 def _send_message(msg, subject, to_emails, fail_silently):
     try:
         msg.send(fail_silently=False)
@@ -75,10 +87,7 @@ def send_templated_email(subject, template_name, context, to_emails, attachments
                 mimetype = att[2] if len(att) >= 3 else 'application/pdf'
                 msg.attach(filename, content, mimetype)
         if fail_silently and getattr(settings, 'EMAIL_ASYNC', False):
-            import threading
-            threading.Thread(
-                target=_send_message, args=(msg, subject, to_emails, True), daemon=True
-            ).start()
+            run_in_background(_send_message, msg, subject, to_emails, True)
             return True
         return _send_message(msg, subject, to_emails, fail_silently)
     except Exception as e:

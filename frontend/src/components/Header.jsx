@@ -552,7 +552,7 @@ const Header = () => {
             <div className="tn-header__sub-strip-left">
               <span><i className="fas fa-truck" /> Livraison gratuite à Port-Gentil dès 25 000 FCFA</span>
               <span className="tn-header__sub-strip-dot">·</span>
-              <span>Paiement Moov Money &amp; Airtel Money</span>
+              <span>Paiement Moov Money, Airtel Money &amp; BambooPay</span>
             </div>
             <span className="tn-header__sub-strip-phone">☎ +241 65 34 88 87</span>
           </div>

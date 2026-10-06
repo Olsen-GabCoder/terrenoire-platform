@@ -12,12 +12,13 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 from rest_framework.throttling import UserRateThrottle
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Prefetch
 from django.http import HttpResponse
 from django.utils import timezone
 
-from .models import Order, OrderItem, Payment
+from .models import Order, OrderItem, Payment, PaymentNotification
 from apps.core.invoice import generate_order_invoice_pdf
 from .serializers import (
     OrderCreateSerializer,
@@ -30,8 +31,19 @@ from .services.payment_finalizer import apply_bamboo_result
 
 logger = logging.getLogger('bamboo_pay')
 
-# Un paiement Mobile Money non confirmé après ce délai est considéré expiré
+# Un paiement non confirmé après ce délai est considéré expiré.
+# La page BambooPay laisse plus de temps au client pour saisir ses informations.
 PAYMENT_EXPIRATION_DELAY = timedelta(minutes=10)
+REDIRECT_PAYMENT_EXPIRATION_DELAY = timedelta(minutes=30)
+# Intervalle minimal entre deux appels à /check-status pour un même paiement :
+# la doc Bamboo demande de ne pas l'appeler en boucle (il peut déclencher un SMS).
+BAMBOO_CHECK_MIN_INTERVAL = timedelta(seconds=20)
+
+
+def payment_expiration_delay(payment):
+    if payment.provider == 'BAMBOOPAY':
+        return REDIRECT_PAYMENT_EXPIRATION_DELAY
+    return PAYMENT_EXPIRATION_DELAY
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -260,7 +272,7 @@ class PaymentInitiateView(APIView):
 
     def post(self, request):
         order_id = request.data.get('order_id')
-        operator = request.data.get('operator')  # moov_money | airtel_money
+        operator = request.data.get('operator')  # moov_money | airtel_money | bamboopay
         phone = request.data.get('phone')
 
         # Validation
@@ -270,9 +282,9 @@ class PaymentInitiateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        if operator not in ('moov_money', 'airtel_money'):
+        if operator not in ('moov_money', 'airtel_money', 'bamboopay'):
             return Response(
-                {'error': "operator doit etre 'moov_money' ou 'airtel_money'."},
+                {'error': "operator doit etre 'moov_money', 'airtel_money' ou 'bamboopay'."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -306,42 +318,61 @@ class PaymentInitiateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Si un paiement PENDING existe, verifier s'il est expire ou reutilisable
+        provider = Payment.BAMBOO_OPERATOR_MAP[operator]
+
+        # Un paiement PENDING existe : le réutiliser s'il est encore actif et du même
+        # mode, sinon l'expirer (délai dépassé ou changement de moyen de paiement).
         current_payment = order.payments.filter(status='PENDING').order_by('-created_at').first()
         if current_payment:
-            if current_payment.created_at < timezone.now() - timedelta(minutes=10):
-                current_payment.status = 'EXPIRED'
-                current_payment.finalized_at = timezone.now()
-                current_payment.save()
-                logger.info("payment.auto_expired_on_retry ref=%s", current_payment.transaction_id)
-            else:
-                # Reutiliser le paiement pending actif
-                return Response({
+            still_active = current_payment.created_at >= timezone.now() - payment_expiration_delay(current_payment)
+            if still_active and current_payment.provider == provider:
+                response = {
                     'bamboo_ref': current_payment.transaction_id,
                     'status': 'PENDING',
                     'message': 'Paiement déjà initié. Vérifiez votre téléphone.',
-                })
+                }
+                redirect_url = (current_payment.bamboo_response or {}).get('redirect_url')
+                if redirect_url:
+                    response['redirect_url'] = redirect_url
+                    response['message'] = 'Paiement déjà initié. Poursuivez sur la page BambooPay.'
+                return Response(response)
+            current_payment.status = 'EXPIRED'
+            current_payment.finalized_at = timezone.now()
+            current_payment.save()
+            logger.info("payment.expired_on_retry ref=%s", current_payment.transaction_id)
 
         # Montant entier en FCFA, arrondi au supérieur pour ne jamais sous-facturer
         amount = int(order.total_amount.to_integral_value(rounding=ROUND_CEILING))
+        reference = f"TN-{order.id}-{uuid.uuid4().hex[:8]}"
+        payer_name = request.user.get_full_name() or request.user.username
 
-        # Appeler Bamboo Pay
         try:
             service = get_bamboo_service()
-            reference = f"TN-{order.id}-{uuid.uuid4().hex[:8]}"
-            payer_name = request.user.get_full_name() or request.user.username
-
-            result = service.initiate_instant_payment(
-                phone=phone,
-                amount=amount,
-                payer_name=payer_name,
-                reference=reference,
-                operator=operator,
-            )
-
-            # Creer le Payment en DB
-            bamboo_ref = result.get('reference_bp', reference)
-            provider = Payment.BAMBOO_OPERATOR_MAP.get(operator, 'MOBICASH')
+            if operator == 'bamboopay':
+                # Mode A : redirection vers la page de paiement BambooPay.
+                # BambooPay ajoutera « /?status=...&ref=... » : URL sans paramètres.
+                frontend_url = settings.FRONTEND_URL.rstrip('/')
+                result = service.initiate_redirect_payment(
+                    phone=phone,
+                    amount=amount,
+                    payer_name=payer_name,
+                    billing_id=reference,
+                    matricule=f"TNE-{request.user.id}",
+                    return_url=f"{frontend_url}/checkout/paiement/{reference}",
+                )
+                # La référence BambooPay n'est connue qu'au retour : on suit le
+                # paiement avec notre billingId (accepté par check-status).
+                bamboo_ref = reference
+            else:
+                # Mode B : paiement instantané (validation sur le téléphone)
+                result = service.initiate_instant_payment(
+                    phone=phone,
+                    amount=amount,
+                    payer_name=payer_name,
+                    reference=reference,
+                    operator=operator,
+                )
+                bamboo_ref = result.get('reference_bp') or reference
 
             Payment.objects.create(
                 order=order,
@@ -358,15 +389,19 @@ class PaymentInitiateView(APIView):
                 order.id, bamboo_ref, provider, order.total_amount
             )
 
-            return Response({
+            response = {
                 'bamboo_ref': bamboo_ref,
                 'merchant_ref': reference,
                 'status': 'PENDING',
                 'message': 'Paiement initie. Validez sur votre telephone.',
-            }, status=status.HTTP_202_ACCEPTED)
+            }
+            if operator == 'bamboopay':
+                response['redirect_url'] = result['redirect_url']
+                response['message'] = 'Redirection vers la page de paiement BambooPay.'
+            return Response(response, status=status.HTTP_202_ACCEPTED)
 
         except (BambooPayError, RuntimeError) as e:
-            logger.error("payment.initiate_failed order=%d err=%s", order.id, str(e))
+            logger.error("payment.initiate_failed order=%d provider=%s err=%s", order.id, provider, str(e))
             return Response(
                 {'error': 'Le service de paiement est temporairement indisponible. Veuillez réessayer dans quelques instants.'},
                 status=status.HTTP_502_BAD_GATEWAY
@@ -399,9 +434,25 @@ class PaymentCheckStatusView(APIView):
                 'finalized_at': payment.finalized_at,
             })
 
-        expired_locally = payment.created_at < timezone.now() - PAYMENT_EXPIRATION_DELAY
+        now = timezone.now()
+        expired_locally = payment.created_at < now - payment_expiration_delay(payment)
 
-        # Toujours interroger Bamboo avant de conclure : un client peut valider
+        # Le client interroge cette vue toutes les 5 s : on ne relaie à Bamboo qu'au
+        # plus une fois toutes les 20 s (le callback met à jour le statut entre-temps).
+        # Avant d'expirer, Bamboo est toujours interrogé.
+        recently_checked = (
+            payment.last_checked_at is not None
+            and payment.last_checked_at > now - BAMBOO_CHECK_MIN_INTERVAL
+        )
+        if recently_checked and not expired_locally:
+            return Response({
+                'bamboo_ref': payment.transaction_id,
+                'status': payment.status,
+                'finalized_at': payment.finalized_at,
+            })
+        Payment.objects.filter(pk=payment.pk).update(last_checked_at=now)
+
+        # Interroger Bamboo avant de conclure : un client peut valider
         # le paiement sur son téléphone juste avant l'expiration.
         try:
             service = get_bamboo_service()
@@ -433,11 +484,12 @@ class PaymentCheckStatusView(APIView):
             payment.refresh_from_db()
             logger.info("payment.auto_expired ref=%s", bamboo_ref)
             if payment.status == 'EXPIRED':
+                minutes = int(payment_expiration_delay(payment).total_seconds() // 60)
                 return Response({
                     'bamboo_ref': payment.transaction_id,
                     'status': 'EXPIRED',
                     'finalized_at': payment.finalized_at,
-                    'message': 'Paiement expiré après 10 minutes sans confirmation.',
+                    'message': f'Paiement expiré après {minutes} minutes sans confirmation.',
                 })
 
         return Response({
@@ -460,15 +512,19 @@ def _webhook_token_is_valid(request):
 
 
 class PaymentWebhookView(APIView):
-    """POST /api/payments/webhook/ — Notification asynchrone Bamboo Pay.
+    """POST /api/payments/webhook/ — Notification asynchrone Bamboo Pay (callback).
 
-    Bamboo Pay appelle cette URL quand le statut d'une transaction change.
-    Pas d'auth utilisateur (Bamboo appelle directement) : le corps de la requête
-    n'est donc PAS digne de confiance. Il sert uniquement à identifier le
-    paiement ; le statut réel est toujours revérifié auprès de l'API Bamboo.
+    Bamboo Pay appelle cette URL quand le statut d'une transaction change, pour
+    le paiement instantané (callback_url) comme pour la redirection (update_status_url).
+    Corps reçu : billingId (réf. BambooPay), reference (réf. marchand), amount,
+    status (completed|failed), idempotency_key, etc.
+
+    Pas d'auth utilisateur (Bamboo appelle directement) : le corps n'est PAS digne
+    de confiance. Il sert à identifier le paiement ; le statut réel est revérifié
+    auprès de l'API Bamboo. Chaque idempotency_key n'est traitée qu'une fois.
     """
     permission_classes = []
-    authentication_classes = []
+    authentication_classes = []  # vue API : pas de session, donc pas de CSRF
 
     def post(self, request):
         if not _webhook_token_is_valid(request):
@@ -476,34 +532,59 @@ class PaymentWebhookView(APIView):
             return Response({'error': 'forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
         data = request.data if hasattr(request.data, 'get') else {}
-        reference = data.get('reference_bp') or data.get('reference') or data.get('billingId')
-        logger.info("webhook.received ref=%s claimed_status=%s", reference, data.get('status'))
+        candidates = [
+            str(v) for v in (
+                data.get('billingId'), data.get('reference_bp'), data.get('reference'),
+            ) if v
+        ]
+        idempotency_key = str(data.get('idempotency_key') or '')[:255]
+        logger.info(
+            "webhook.received refs=%s claimed_status=%s key=%s",
+            candidates, data.get('status'), idempotency_key or '-',
+        )
 
-        if not reference:
+        if not candidates:
             logger.warning("webhook.invalid_payload keys=%s", list(data.keys()))
             return Response({'error': 'reference manquante'}, status=status.HTTP_400_BAD_REQUEST)
 
-        reference = str(reference)
+        if idempotency_key and PaymentNotification.objects.filter(idempotency_key=idempotency_key).exists():
+            return Response({'status': 'duplicate_ignored'})
+
         payment = (
-            Payment.objects.filter(transaction_id=reference).first()
-            or Payment.objects.filter(bamboo_response__reference=reference).first()
+            Payment.objects.filter(transaction_id__in=candidates).first()
+            or Payment.objects.filter(bamboo_response__reference__in=candidates).first()
         )
         if payment is None:
-            logger.warning("webhook.payment_not_found ref=%s", reference)
+            logger.warning("webhook.payment_not_found refs=%s", candidates)
             return Response({'error': 'payment introuvable'}, status=status.HTTP_404_NOT_FOUND)
+
+        if idempotency_key:
+            _, created = PaymentNotification.objects.get_or_create(
+                idempotency_key=idempotency_key,
+                defaults={'payment': payment, 'payload': _json_safe(data)},
+            )
+            if not created:  # doublon reçu en parallèle
+                return Response({'status': 'duplicate_ignored'})
 
         if payment.status in ('SUCCESS', 'FAILED'):
             return Response({'status': 'already_processed'})
 
         try:
             result = get_bamboo_service().check_status(payment.transaction_id)
+            Payment.objects.filter(pk=payment.pk).update(last_checked_at=timezone.now())
         except (BambooPayError, RuntimeError) as e:
-            # La réconciliation (reconcile_payments) rattrapera ce paiement.
-            logger.warning("webhook.verification_failed ref=%s err=%s", reference, e)
-            return Response(
-                {'status': 'verification_deferred'},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
+            # On accuse réception ; le suivi client (check-status) et la
+            # réconciliation rattraperont ce paiement.
+            logger.warning("webhook.verification_failed ref=%s err=%s", payment.transaction_id, e)
+            return Response({'status': 'received_verification_deferred'})
 
         payment = apply_bamboo_result(payment.pk, result, source='webhook')
         return Response({'status': payment.status.lower()})
+
+
+def _json_safe(data):
+    """Copie JSON-sérialisable du corps reçu (QueryDict ou dict)."""
+    try:
+        return {k: data.get(k) for k in data.keys()}
+    except Exception:
+        return {}

@@ -126,17 +126,20 @@ const Checkout = () => {
   };
 
   const isMobileMoney = paymentMethod === 'moov_money' || paymentMethod === 'airtel_money';
+  const isBambooPay = paymentMethod === 'bamboopay';
+  // Les deux modes Bamboo demandent le numéro du payeur
+  const needsPhone = isMobileMoney || isBambooPay;
   const phoneDigits = normalizeGabonPhone(phoneForPayment);
   const detectedOperator = phoneDigits.startsWith('06') ? 'moov_money' : phoneDigits.startsWith('07') ? 'airtel_money' : null;
   const operatorMismatch = isMobileMoney && phoneDigits.length === 9 && detectedOperator && detectedOperator !== paymentMethod;
   const isPhoneValid = phoneDigits.length === 9 && !operatorMismatch;
-  const canSubmit = !isProcessing && (!isMobileMoney || isPhoneValid);
+  const canSubmit = !isProcessing && (!needsPhone || isPhoneValid);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (isMobileMoney && !isPhoneValid) {
+    if (needsPhone && !isPhoneValid) {
       setError(operatorMismatch
         ? `Ce numéro est un numéro ${OPERATOR_NAMES[detectedOperator]} : choisissez ${OPERATOR_NAMES[detectedOperator]} comme mode de paiement.`
         : 'Veuillez saisir un numéro de téléphone valide (8 ou 9 chiffres).');
@@ -165,7 +168,7 @@ const Checkout = () => {
         order = await orderService.createOrder(orderData);
       }
 
-      if (isMobileMoney) {
+      if (needsPhone) {
         try {
           const result = await orderService.initiatePayment(
             order.id,
@@ -175,10 +178,19 @@ const Checkout = () => {
 
           sessionStorage.setItem('current_payment_ref', result.bamboo_ref);
           sessionStorage.setItem('current_order_id', String(order.id));
+          sessionStorage.setItem('current_payment_operator', paymentMethod);
+          sessionStorage.setItem('current_payment_amount', String(order.total_amount));
 
           if (!retryOrder) {
             setOrderPlaced(true);
             clearCart();
+          }
+
+          if (result.redirect_url) {
+            // Mode BambooPay : le client paie sur la page BambooPay, qui le renvoie
+            // ensuite sur /checkout/paiement/<référence> où le statut est vérifié.
+            window.location.assign(result.redirect_url);
+            return;
           }
 
           navigate(`/checkout/paiement/${result.bamboo_ref}`, {
@@ -412,6 +424,7 @@ const Checkout = () => {
                 {[
                   { value: 'moov_money', name: 'Moov Money', desc: 'Paiement mobile instantané', icon: 'fas fa-mobile-alt', iconClass: 'chk-pay__icon--moov', badge: 'Recommandé' },
                   { value: 'airtel_money', name: 'Airtel Money', desc: 'Paiement mobile instantané', icon: 'fas fa-mobile-alt', iconClass: 'chk-pay__icon--airtel' },
+                  { value: 'bamboopay', name: 'BambooPay', desc: 'Paiement sur la page sécurisée BambooPay', icon: 'fas fa-lock', iconClass: 'chk-pay__icon--bamboopay' },
                   { value: 'cash', name: 'Espèces à la livraison', desc: 'Paiement en main propre', icon: 'fas fa-money-bill-wave', iconClass: 'chk-pay__icon--cash', disabled: true, badgeSoon: 'Bientôt' },
                   { value: 'visa', name: 'Carte Visa', desc: 'Paiement par carte bancaire', icon: 'fab fa-cc-visa', iconClass: 'chk-pay__icon--visa', disabled: true, badgeSoon: 'Bientôt' },
                 ].map((opt) => (
@@ -444,10 +457,10 @@ const Checkout = () => {
                 ))}
               </div>
 
-              {isMobileMoney && (
+              {needsPhone && (
                 <div className="chk-pay__phone">
                   <label className="chk-pay__phone-label" htmlFor="phone_payment">
-                    Numéro de téléphone (mobile money) <span className="required">*</span>
+                    {isBambooPay ? 'Numéro de téléphone' : 'Numéro de téléphone (mobile money)'} <span className="required">*</span>
                   </label>
                   <div className="chk-pay__phone-wrap">
                     <span className="chk-pay__phone-prefix">+241</span>
@@ -470,7 +483,9 @@ const Checkout = () => {
                         </button>
                       </>
                     ) : isPhoneValid
-                      ? 'Vous recevrez une demande de validation sur ce numéro.'
+                      ? (isBambooPay
+                        ? 'Vous serez redirigé vers BambooPay pour finaliser le paiement.'
+                        : 'Vous recevrez une demande de validation sur ce numéro.')
                       : phoneForPayment.length > 0
                         ? 'Le numéro doit comporter 8 ou 9 chiffres.'
                         : 'Saisissez le numéro associé à votre compte mobile money.'}

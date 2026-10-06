@@ -210,7 +210,7 @@ const Contact = () => {
             </div>
             <div className="ct-faq-list">
               {[
-                ['Commande', 'Panier puis paiement via Moov Money ou Airtel Money.'],
+                ['Commande', 'Panier puis paiement via Moov Money, Airtel Money ou BambooPay.'],
                 ['Livraison', '5-7 jours à Port-Gentil, 7-10 jours dans les autres villes du Gabon.'],
                 ['Manuscrit', 'Via le formulaire en ligne ou par email direct.'],
               ].map(([q, a]) => (

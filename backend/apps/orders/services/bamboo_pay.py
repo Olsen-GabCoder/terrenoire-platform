@@ -167,6 +167,74 @@ class BambooPayService:
             )
             raise BambooPayError(f"Erreur reseau: {e}") from e
 
+    def initiate_redirect_payment(self, phone, amount, payer_name, billing_id,
+                                  matricule, return_url):
+        """
+        Methode A — Paiement avec redirection vers la page BambooPay.
+
+        POST /api/send. Le client est ensuite redirigé vers `redirect_url` ;
+        à la fin du paiement BambooPay le renvoie sur `return_url` en ajoutant
+        ?status=completed|failed&ref=TXN-... (ces paramètres ne sont pas fiables :
+        le statut est toujours revérifié via check_status).
+
+        Returns:
+            dict: {"redirect_url": "https://..."}
+
+        Raises:
+            BambooPayError: en cas d'echec reseau ou API
+        """
+        start = time.time()
+        payload = {
+            'payerName': payer_name,
+            'matricule': matricule,
+            'raisonSociale': None,
+            'billingId': billing_id,
+            'transactionAmount': str(amount),
+            'merchant_id': self.merchant_id,
+            'phone': phone,
+            'return_url': return_url,
+            'update_status_url': self.callback_url or None,
+        }
+        logger.info(
+            "bamboo.redirect_payload billing=%s amount=%s callback_configured=%s merchant=%s",
+            billing_id, amount, bool(self.callback_url), self.merchant_id,
+        )
+        try:
+            response = requests.post(
+                f"{self.api_url}/api/send",
+                json=payload,
+                auth=self.auth,
+                timeout=30,
+            )
+        except requests.RequestException as e:
+            logger.error(
+                "bamboo.redirect FAILED billing=%s duration=%.3fs err=%s",
+                billing_id, time.time() - start, str(e)
+            )
+            raise BambooPayError(f"Erreur reseau: {e}") from e
+
+        logger.info(
+            "bamboo.redirect billing=%s status_http=%d duration=%.3fs",
+            billing_id, response.status_code, time.time() - start
+        )
+        try:
+            data = response.json()
+        except ValueError:
+            data = {}
+
+        if response.status_code == 200 and data.get('redirect_url'):
+            return data
+
+        logger.error(
+            "bamboo.redirect_error billing=%s status_http=%d body=%s",
+            billing_id, response.status_code, response.text[:500]
+        )
+        if response.status_code == 401:
+            raise BambooPayError(f"Authentification echouee: {data.get('message', 'Unauthorized')}")
+        if response.status_code == 422:
+            raise BambooPayError(f"Validation echouee: {data}")
+        raise BambooPayError(f"Erreur Bamboo Pay HTTP {response.status_code}: {data or response.text[:200]}")
+
     def check_status(self, transaction_id):
         """
         Methode C — Verification du statut d'une transaction.
@@ -208,13 +276,15 @@ class BambooPayService:
                 return data
 
             if response.status_code == 404:
-                data = response.json()
                 raise BambooPayError(
                     f"Transaction introuvable: {transaction_id}"
                 )
 
             if response.status_code == 401:
-                data = response.json()
+                try:
+                    data = response.json()
+                except ValueError:
+                    data = {}
                 raise BambooPayError(
                     f"Authentification echouee: {data.get('message', 'Unauthorized')}"
                 )

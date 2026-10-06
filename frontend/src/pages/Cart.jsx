@@ -116,7 +116,7 @@ const Cart = () => {
             <div className="crt-empty__features">
               {[
                 { ico: 'fas fa-truck', t: 'Livraison rapide', d: '5-10 jours au Gabon' },
-                { ico: 'fas fa-mobile-alt', t: 'Paiement', d: 'Moov Money, Airtel Money' },
+                { ico: 'fas fa-mobile-alt', t: 'Paiement', d: 'Moov Money, Airtel Money, BambooPay' },
                 { ico: 'fas fa-lock', t: 'Paiement sécurisé', d: 'Transactions protégées' },
               ].map((f) => (
                 <div className="crt-feat" key={f.t}>
@@ -328,7 +328,7 @@ const Cart = () => {
               <div className="crt-guarantees">
                 {[
                   { ico: 'fas fa-lock', t: 'Paiement sécurisé' },
-                  { ico: 'fas fa-mobile-alt', t: 'Moov Money, Airtel Money' },
+                  { ico: 'fas fa-mobile-alt', t: 'Moov Money, Airtel Money, BambooPay' },
                   { ico: 'fas fa-truck', t: 'Livraison rapide' },
                 ].map((g) => (
                   <div className="crt-guar" key={g.t}>

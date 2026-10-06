@@ -1,5 +1,4 @@
 import logging
-import threading
 
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAdminUser
@@ -9,6 +8,7 @@ from rest_framework.views import APIView
 from apps.core.throttling import PublicEndpointThrottle
 from .models import Coupon
 from .serializers import CouponValidateSerializer, CouponSerializer
+from apps.core.email import run_in_background
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class CouponListCreateView(APIView):
                         send_coupon_email(c)
                     except Exception as e:
                         logger.exception("Erreur envoi coupon %s a %s: %s", c.code, c.recipient_email, e)
-                threading.Thread(target=_send, args=(coupon,), daemon=True).start()
+                run_in_background(_send, coupon)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

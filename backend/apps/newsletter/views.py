@@ -1,5 +1,4 @@
 import logging
-import threading
 from datetime import timedelta
 
 from django.conf import settings
@@ -13,6 +12,7 @@ from rest_framework.views import APIView
 from apps.core.throttling import PublicEndpointThrottle
 from .models import NewsletterSubscriber
 from .serializers import NewsletterSubscribeSerializer
+from apps.core.email import run_in_background
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ def _send_confirmation_email_async(subscriber):
             )
         except Exception as e:
             logger.exception("Erreur envoi email confirmation newsletter à %s: %s", subscriber.email, e)
-    threading.Thread(target=_send, daemon=True).start()
+    run_in_background(_send)
 
 
 class NewsletterSubscribeView(APIView):
@@ -111,7 +111,7 @@ class NewsletterConfirmView(APIView):
                     send_newsletter_welcome(subscriber.email, subscriber.confirmation_token)
                 except Exception as e:
                     logger.exception("Erreur envoi welcome newsletter: %s", e)
-            threading.Thread(target=_send_welcome, daemon=True).start()
+            run_in_background(_send_welcome)
 
         return self._respond(request, 'success')
 

@@ -410,6 +410,7 @@
 }
 .chk-pay__icon--moov   { background: rgba(0, 150, 57, 0.08); color: #009639; }
 .chk-pay__icon--airtel { background: rgba(237, 28, 36, 0.08); color: #ED1C24; }
+.chk-pay__icon--bamboopay { background: rgba(46, 125, 50, 0.08); color: #2E7D32; }
 .chk-pay__icon--cash   { background: rgba(200, 149, 108, 0.1); color: var(--tn-gold, #C8956C); }
 .chk-pay__icon--visa   { background: rgba(26, 31, 113, 0.08); color: #1A1F71; }
 .chk-pay__label { flex: 1; min-width: 0; }

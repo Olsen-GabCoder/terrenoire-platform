@@ -43,6 +43,7 @@ from .serializers import (
     BookReviewReplySerializer,
 )
 from .models import Collection
+from apps.core.email import run_in_background
 
 
 @xframe_options_exempt
@@ -273,7 +274,6 @@ class BookViewSet(CatalogWritePermissionMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """Sauvegarde le livre puis notifie les abonnés newsletter en arrière-plan."""
-        import threading
         book = serializer.save()
         book = Book.objects.select_related('author', 'category').get(pk=book.pk)
 
@@ -283,11 +283,10 @@ class BookViewSet(CatalogWritePermissionMixin, viewsets.ModelViewSet):
                 send_new_book_notification(b)
             except Exception as e:
                 logger.exception("Erreur notification newsletter nouveau livre: %s", e)
-        threading.Thread(target=_notify, args=(book,), daemon=True).start()
+        run_in_background(_notify, book)
 
     def perform_update(self, serializer):
         """Détecte si un livre passe en promo et notifie les abonnés."""
-        import threading
         old_original_price = serializer.instance.original_price
         book = serializer.save()
         book = Book.objects.select_related('author', 'category').get(pk=book.pk)
@@ -306,7 +305,7 @@ class BookViewSet(CatalogWritePermissionMixin, viewsets.ModelViewSet):
                     send_promo_notification(b)
                 except Exception as e:
                     logger.exception("Erreur notification promo: %s", e)
-            threading.Thread(target=_notify_promo, args=(book,), daemon=True).start()
+            run_in_background(_notify_promo, book)
 
     def get_queryset(self):
         """

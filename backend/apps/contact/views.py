@@ -1,5 +1,4 @@
 import logging
-import threading
 
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAdminUser
@@ -9,6 +8,7 @@ from rest_framework.views import APIView
 from apps.core.throttling import ContactThrottle
 from .models import ContactMessage
 from .serializers import ContactMessageSerializer
+from apps.core.email import run_in_background
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class ContactSubmitView(APIView):
                     send_contact_notification(c)
                 except Exception as e:
                     logger.exception("Erreur envoi notification contact: %s", e)
-            threading.Thread(target=_send, args=(contact,), daemon=True).start()
+            run_in_background(_send, contact)
             return Response(
                 {'success': True, 'message': 'Message envoyé ! Nous vous répondrons très bientôt.'},
                 status=status.HTTP_201_CREATED
