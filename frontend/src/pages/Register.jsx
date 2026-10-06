@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import TnInput from '../components/ui/TnInput';
+import TnPhoneInput from '../components/ui/TnPhoneInput';
+import { validatePhone, phoneForApi } from '../utils/phone';
 import TnButton from '../components/ui/TnButton';
 import TnAlert from '../components/ui/TnAlert';
 import TnLink from '../components/ui/TnLink';
@@ -80,8 +82,9 @@ const Register = () => {
       errors.last_name = 'Le nom est requis';
     }
 
-    if (formData.phone_number.trim() && !/^\+?[0-9\s\-()]+$/.test(formData.phone_number)) {
-      errors.phone_number = 'Format invalide';
+    const phoneError = validatePhone(formData.phone_number, { allowForeign: true });
+    if (phoneError) {
+      errors.phone_number = phoneError;
     }
 
     if (!termsAccepted) {
@@ -108,7 +111,7 @@ const Register = () => {
         password_confirm: formData.confirmPassword,
         first_name: formData.first_name.trim(),
         last_name: formData.last_name.trim(),
-        phone_number: formData.phone_number.trim() || '',
+        phone_number: phoneForApi(formData.phone_number),
       };
 
       const result = await register(registrationData);
@@ -119,22 +122,18 @@ const Register = () => {
           state: { message: 'Inscription réussie ! Bienvenue.' },
         });
       } else {
-        if (typeof result.error === 'object') {
-          const apiErrors = {};
-          Object.keys(result.error).forEach((key) => {
-            apiErrors[key] = Array.isArray(result.error[key])
-              ? result.error[key][0]
-              : result.error[key];
-          });
-          setFieldErrors(apiErrors);
-          setError('Veuillez corriger les erreurs');
-        } else {
-          setError(result.error || "L'inscription n'a pas abouti");
-        }
+        const apiFieldErrors = result.fieldErrors || {};
+        if (apiFieldErrors.password_confirm) apiFieldErrors.confirmPassword = apiFieldErrors.password_confirm;
+        setFieldErrors(apiFieldErrors);
+        setError(
+          Object.keys(apiFieldErrors).length
+            ? 'Certaines informations sont à corriger : voir les champs indiqués ci-dessous.'
+            : result.error || "L'inscription n'a pas abouti. Réessayez."
+        );
       }
     } catch (err) {
       console.error('Erreur inscription:', err);
-      setError('Pas de connexion à nos archives.');
+      setError('Impossible de joindre le serveur. Vérifiez votre connexion internet puis réessayez.');
     } finally {
       setIsLoading(false);
     }
@@ -251,17 +250,12 @@ const Register = () => {
                 />
               </div>
 
-              <TnInput
-                label="Téléphone"
-                type="tel"
+              <TnPhoneInput
                 name="phone_number"
                 value={formData.phone_number}
                 onChange={handleChange}
-                placeholder="+241 XX XXX XXXX"
-                autoComplete="tel"
                 disabled={isLoading}
-                leftIcon={<i className="fas fa-phone" />}
-                helper="Optionnel"
+                helper="Optionnel — nécessaire pour commander"
                 error={fieldErrors.phone_number}
               />
 
@@ -340,7 +334,6 @@ const Register = () => {
         </div>
       </div>
 
-      <div className="reg-footer-fade" />
     </div>
   );
 };

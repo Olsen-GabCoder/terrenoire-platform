@@ -1,15 +1,22 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import orderService from '../services/orderService';
+import { formatPhoneDisplay, formatPhoneTyping, phoneForInput, phoneForApi, validatePhone } from '../utils/phone';
 import '../styles/Profile.css';
+import TnBookCover from '../components/ui/TnBookCover';
 
 const Profile = () => {
   const { user, authChecked, logout, updateProfile } = useAuth();
   const navigate = useNavigate();
-  
+  const location = useLocation();
+  // Arrivée depuis le checkout pour compléter le profil : formulaire ouvert, retour au checkout après enregistrement
+  const fromCheckout = location.state?.from === '/checkout';
+  const messageRef = useRef(null);
+
   const [activeTab, setActiveTab] = useState('info');
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(fromCheckout);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -34,7 +41,7 @@ const Profile = () => {
         first_name: user.first_name || '',
         last_name: user.last_name || '',
         email: user.email || '',
-        phone_number: user.phone_number || '',
+        phone_number: phoneForInput(user.phone_number),
         address: user.address || '',
         city: user.city || '',
         country: user.country || '',
@@ -76,8 +83,14 @@ const Profile = () => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : name === 'phone_number' ? formatPhoneTyping(value) : value
     }));
+    if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: '' }));
+  };
+
+  const showMessage = (type, text) => {
+    setMessage({ type, text });
+    setTimeout(() => messageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
   };
 
   const handleAvatarChange = async (e) => {
@@ -109,14 +122,21 @@ const Profile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setMessage({ type: '', text: '' });
+
+    const phoneError = validatePhone(formData.phone_number, { required: fromCheckout, allowForeign: true });
+    if (phoneError) {
+      setFieldErrors({ phone_number: phoneError });
+      showMessage('error', 'Vérifiez le numéro de téléphone.');
+      return;
+    }
+    setLoading(true);
 
     try {
       const updateData = {
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        phone_number: formData.phone_number,
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        phone_number: phoneForApi(formData.phone_number),
         address: formData.address,
         city: formData.city,
         country: formData.country,
@@ -126,14 +146,19 @@ const Profile = () => {
       const result = await updateProfile(updateData);
       
       if (result.success) {
-        setMessage({ type: 'success', text: 'Profil mis à jour avec succès !' });
+        setFieldErrors({});
+        if (fromCheckout) {
+          navigate('/checkout');
+          return;
+        }
+        showMessage('success', 'Profil mis à jour.');
         setIsEditing(false);
       } else {
-        const errMsg = typeof result.error === 'string' ? result.error : 'Erreur lors de la mise à jour';
-        setMessage({ type: 'error', text: errMsg });
+        setFieldErrors(result.fieldErrors || {});
+        showMessage('error', result.error || 'La mise à jour a échoué. Réessayez.');
       }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Une erreur est survenue' });
+    } catch {
+      showMessage('error', 'La mise à jour a échoué. Réessayez.');
     } finally {
       setLoading(false);
     }
@@ -177,7 +202,10 @@ const Profile = () => {
   };
 
   const totalSpent = useMemo(() => {
-    return orders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+    // Seules les commandes payées comptent dans le total dépensé
+    return orders
+      .filter((o) => o.status === 'PAID' || o.status === 'SHIPPED')
+      .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
   }, [orders]);
 
   const memberSince = user?.date_joined
@@ -321,8 +349,13 @@ const Profile = () => {
         </div>
 
         {/* Message de statut */}
+        {fromCheckout && isEditing && (
+          <div className="message info" role="status">
+            Complétez vos coordonnées pour finaliser votre commande : vous reviendrez au paiement juste après.
+          </div>
+        )}
         {message.text && (
-          <div className={`message ${message.type}`}>
+          <div className={`message ${message.type}`} role="alert" ref={messageRef}>
             {message.text}
           </div>
         )}
@@ -363,7 +396,7 @@ const Profile = () => {
                       <div className="info-grid">
                         <div className="info-item">
                           <span className="info-label">Téléphone</span>
-                          <span className="info-value">{user.phone_number || 'Non renseigné'}</span>
+                          <span className="info-value">{user.phone_number ? formatPhoneDisplay(user.phone_number) : 'Non renseigné'}</span>
                         </div>
                       </div>
                     </div>
@@ -468,15 +501,22 @@ const Profile = () => {
                     </div>
 
                     <div className="form-group">
-                      <label htmlFor="phone_number">Téléphone</label>
+                      <label htmlFor="phone_number">Téléphone *</label>
                       <input
                         type="tel"
                         id="phone_number"
                         name="phone_number"
                         value={formData.phone_number}
                         onChange={handleChange}
-                        placeholder="+241 XX XX XX XX"
+                        placeholder="074 30 16 39"
+                        inputMode="tel"
+                        autoComplete="tel-national"
+                        aria-invalid={!!fieldErrors.phone_number}
+                        aria-describedby="phone_number_hint"
                       />
+                      <small id="phone_number_hint" className={`form-hint${fieldErrors.phone_number ? ' form-hint--error' : ''}`}>
+                        {fieldErrors.phone_number || 'Nécessaire pour commander. Ex. 074 30 16 39'}
+                      </small>
                     </div>
 
                     <div className="form-group full-width">
@@ -487,8 +527,10 @@ const Profile = () => {
                         name="address"
                         value={formData.address}
                         onChange={handleChange}
-                        placeholder="123 Rue de l'Exemple"
+                        placeholder="Quartier, rue, repère…"
+                        autoComplete="street-address"
                       />
+                      <small className="form-hint">Nécessaire pour la livraison d&apos;un livre papier</small>
                     </div>
 
                     <div className="form-group">
@@ -500,6 +542,7 @@ const Profile = () => {
                         value={formData.city}
                         onChange={handleChange}
                         placeholder="Port-Gentil"
+                        autoComplete="address-level2"
                       />
                     </div>
 
@@ -589,12 +632,11 @@ const Profile = () => {
                       <div className="order-items">
                         {order.items.map((item) => (
                           <div key={item.id} className="order-item">
-                            <img
-                              src={item.book.cover_image || '/images/default-book-cover.jpg'}
-                              alt={item.book.title}
-                                loading="lazy"
-                                decoding="async"
-                            />
+                            {item.book.cover_image ? (
+                              <img src={item.book.cover_image} alt="" loading="lazy" decoding="async" />
+                            ) : (
+                              <span className="order-item__cover"><TnBookCover book={item.book} variant="compact" /></span>
+                            )}
                             <div className="item-details">
                               <h5>{item.book.title}</h5>
                               <p>{item.book.author?.full_name}</p>

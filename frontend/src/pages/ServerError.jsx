@@ -38,7 +38,6 @@ const ServerError = () => {
           </div>
         </div>
       </section>
-      <div className="srv-err-footer-fade" />
     </div>
   );
 };

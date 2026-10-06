@@ -17,7 +17,7 @@ const FAQ_CATEGORIES = [
   {
     id: 'livraison', icon: 'fa-truck', label: 'Livraison',
     items: [
-      { q: 'Quels sont les délais de livraison ?', a: 'Les commandes sont expédiées sous 5 à 10 jours ouvrés au Gabon. Pour Port-Gentil et environs : 5 à 7 jours. Pour les autres villes (Libreville, Lambaréné, Franceville, Mouila, Oyem) : 7 à 10 jours. Vous recevez un email de suivi dès l\'expédition.' },
+      { q: 'Quels sont les délais de livraison ?', a: 'Nous livrons les livres papier à Port-Gentil (24 à 72 heures ouvrées), Libreville (3 à 7 jours ouvrés) et Lambaréné (5 à 10 jours ouvrés). Ailleurs au Gabon, la commande est à retirer dans l\'une de ces trois villes : nous vous contactons pour organiser le retrait. Les ebooks, eux, sont lisibles en ligne dès la confirmation du paiement.' },
       { q: 'Quels sont les frais de livraison ?', a: 'Les frais de livraison dépendent du montant de votre commande. Un seuil de gratuité peut s\'appliquer. Les frais sont calculés automatiquement lors du passage en caisse et affichés avant validation. Les ebooks ne sont pas soumis à des frais de livraison.' },
       { q: 'Livrez-vous en dehors du Gabon ?', a: 'Pour l\'instant, nos livraisons sont limitées au Gabon. Nous travaillons à étendre notre service à d\'autres pays de la sous-région. Inscrivez-vous à notre newsletter pour être informé des évolutions.' },
       { q: 'Que faire si mon colis arrive endommagé ?', a: 'Émettez des réserves auprès du transporteur à la réception, puis contactez-nous dans un délai de 48 heures par email ou via le formulaire de contact, en joignant des photos du colis et du livre endommagé. Nous procéderons au remplacement ou au remboursement à nos frais.' },
@@ -203,7 +203,6 @@ const FAQ = () => {
           </div>
         </div>
       </div>
-      <div className="faq-footer-fade" />
     </div>
   );
 };

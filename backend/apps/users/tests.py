@@ -79,7 +79,7 @@ class UserProfileTest(APITestCase):
     def test_has_complete_profile(self):
         """Profil incomplet sans telephone/adresse/ville."""
         self.assertFalse(self.user.has_complete_profile)
-        self.user.phone_number = '+24112345678'
+        self.user.phone_number = '+24174301639'
         self.user.address = '123 Rue'
         self.user.city = 'Port-Gentil'
         self.user.save()

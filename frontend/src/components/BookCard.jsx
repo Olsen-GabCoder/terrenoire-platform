@@ -155,7 +155,14 @@ const BookCard = ({ book, featured = false }) => {
           </div>
         )}
 
-        {/* Price + action */}
+        {/* Extrait : lien discret au-dessus du prix, pour que « Ajouter » reste aligné d'une carte à l'autre */}
+        {book.has_excerpt && (
+          <button type="button" className="tn-book-card__excerpt" onClick={handleReadExcerpt}>
+            <i className="fas fa-book-open-reader" aria-hidden="true" /> Lire un extrait
+          </button>
+        )}
+
+        {/* Price + action (toujours en bas de carte) */}
         {choosingFormat ? (
           <div className="tn-book-card__formats" role="group" aria-label="Choisir le format">
             <span className="tn-book-card__formats-label">Quel format ?</span>
@@ -207,11 +214,6 @@ const BookCard = ({ book, featured = false }) => {
           </div>
         )}
 
-        {book.has_excerpt && !choosingFormat && (
-          <button type="button" className="tn-book-card__excerpt" onClick={handleReadExcerpt}>
-            <i className="fas fa-book-open-reader" /> Lire un extrait
-          </button>
-        )}
       </div>
     </Link>
   );

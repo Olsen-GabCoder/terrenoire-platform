@@ -526,7 +526,6 @@ const Privacy = () => {
         </div>
 
       </div>
-      <div className="privacy-footer-fade" />
     </div>
   );
 };

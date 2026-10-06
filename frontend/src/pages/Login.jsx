@@ -66,18 +66,16 @@ const Login = () => {
         const from = getRedirectTarget(location.state);
         navigate(from, { replace: true });
       } else {
-        // Gestion des erreurs spécifiques
-        if (typeof result.error === 'object' && result.error.detail) {
-          setError(result.error.detail);
-        } else if (result.error) {
-          setError("Identifiants incorrects.");
+        // 401 = identifiants refusés ; sinon (réseau, trop de tentatives…) message précis
+        if (result.status === 401) {
+          setError("E-mail (ou nom d'utilisateur) ou mot de passe incorrect.");
         } else {
-          setError("Une difficulté est survenue.");
+          setError(result.error || 'La connexion a échoué. Réessayez.');
         }
       }
     } catch (err) {
       console.error("Erreur Login Page:", err);
-      setError("Pas de connexion à nos archives.");
+      setError('Impossible de joindre le serveur. Vérifiez votre connexion internet puis réessayez.');
     } finally {
       setIsLoading(false);
     }
@@ -186,7 +184,6 @@ const Login = () => {
         </div>
       </div>
 
-      <div className="login-footer-fade" />
     </div>
   );
 };

@@ -860,7 +860,6 @@ const Terms = () => (
       </div>
 
     </div>
-    <div className="terms-footer-fade" />
   </div>
 );
 

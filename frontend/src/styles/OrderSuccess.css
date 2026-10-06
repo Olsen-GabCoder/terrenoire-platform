@@ -395,3 +395,14 @@
 @media (max-width: 768px) {
   .os-quote { font-size: 1rem; margin: 24px auto; }
 }
+
+.os-info-value--total {
+  font-weight: 700;
+  color: var(--color-primary, #E8601C);
+}
+.os-invoice-error {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  color: var(--color-error, #c62828);
+  text-align: center;
+}

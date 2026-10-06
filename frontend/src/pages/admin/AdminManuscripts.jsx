@@ -8,6 +8,7 @@ import {
 } from '../../components/admin/AdminPrimitives';
 import { useToast } from '../../components/ui/ToastProvider';
 import api from '../../services/api';
+import { formatPhoneDisplay, phoneHref } from '../../utils/phone';
 
 const GENRE_LABELS = { ROMAN:'Roman', NOUVELLE:'Nouvelle', POESIE:'Poésie', ESSAI:'Essai', THEATRE:'Théâtre', JEUNESSE:'Jeunesse', BD:'BD', AUTRE:'Autre' };
 const LANG_LABELS = { FR:'Français', EN:'Anglais', AR:'Arabe', PT:'Portugais', ES:'Espagnol', AUTRE:'Autre' };
@@ -167,7 +168,7 @@ const AdminManuscripts = () => {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 8, fontSize: 12, color: 'var(--tn-gray-700)' }}>
                     <span><i className="fas fa-envelope" style={{ color: 'var(--tn-orange)', width: 16, marginRight: 4 }} />{sel.email}</span>
-                    {sel.phone_number && <span><i className="fas fa-phone" style={{ color: 'var(--tn-orange)', width: 16, marginRight: 4 }} />{sel.phone_number}</span>}
+                    {sel.phone_number && <a href={phoneHref(sel.phone_number)} style={{ color: 'inherit' }}><i className="fas fa-phone" style={{ color: 'var(--tn-orange)', width: 16, marginRight: 4 }} />{formatPhoneDisplay(sel.phone_number)}</a>}
                     {sel.country && <span style={{ gridColumn: '1 / -1' }}><i className="fas fa-flag" style={{ color: 'var(--tn-orange)', width: 16, marginRight: 4 }} />{sel.country}</span>}
                   </div>
                 </div>

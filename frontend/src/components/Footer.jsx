@@ -104,7 +104,6 @@ const Footer = () => {
     <>
       <footer className="ft">
         <div className="ft__motif-bg tn-motif-bg" />
-        <div className="ft__motif-strip tn-motif-strip" />
 
         {/* ── CITATION AFRICAINE ── */}
         <div className="ft__citation">
@@ -233,13 +232,14 @@ const Footer = () => {
                 <div className="ft__payments-chips">
                   <span className="ft__payments-label">Paiements sécurisés</span>
                   {[
-                    { src: '/images/mobicash.jpeg', alt: 'Mobicash' },
+                    { src: '/images/mobicash.jpeg', alt: 'Moov Money' },
                     { src: '/images/airtel money.png', alt: 'Airtel Money' },
-                    { src: '/images/espaces_payment.png', alt: 'Espèces' },
-                    { src: '/Visa-Logo.png', alt: 'Visa' },
+                    { icon: 'fas fa-lock', alt: 'BambooPay' },
                   ].map(p => (
                     <span className="ft__pay-chip" key={p.alt}>
-                      <img src={p.src} alt={p.alt} className="ft__pay-img" />
+                      {p.src
+                        ? <img src={p.src} alt="" className="ft__pay-img" />
+                        : <i className={`${p.icon} ft__pay-icon`} aria-hidden="true" />}
                       <span>{p.alt}</span>
                     </span>
                   ))}
@@ -265,7 +265,7 @@ const Footer = () => {
 
             {/* ── COLOPHON ── */}
             <div className="ft__colophon">
-              Terre Noire Editions est composee en Playfair Display &amp; Inter.
+              Terre Noire Éditions est composée en Playfair Display &amp; Inter.
             </div>
           </div>
         </div>

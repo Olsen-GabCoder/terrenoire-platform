@@ -278,13 +278,13 @@ class PaymentInitiateView(APIView):
         # Validation
         if not all([order_id, operator, phone]):
             return Response(
-                {'error': 'order_id, operator et phone sont requis.'},
+                {'error': 'Informations de paiement incomplètes : commande, moyen de paiement et numéro sont requis.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         if operator not in ('moov_money', 'airtel_money', 'bamboopay'):
             return Response(
-                {'error': "operator doit etre 'moov_money', 'airtel_money' ou 'bamboopay'."},
+                {'error': "Moyen de paiement invalide : choisissez Airtel Money, Moov Money ou BambooPay."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -307,7 +307,7 @@ class PaymentInitiateView(APIView):
     def _initiate_locked(self, request, order, operator, phone):
         if order.status != 'PENDING':
             return Response(
-                {'error': 'Cette commande ne peut plus etre payee.'},
+                {'error': 'Cette commande ne peut plus être payée.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -393,7 +393,7 @@ class PaymentInitiateView(APIView):
                 'bamboo_ref': bamboo_ref,
                 'merchant_ref': reference,
                 'status': 'PENDING',
-                'message': 'Paiement initie. Validez sur votre telephone.',
+                'message': 'Paiement initié. Validez la demande sur votre téléphone.',
             }
             if operator == 'bamboopay':
                 response['redirect_url'] = result['redirect_url']

@@ -1,11 +1,34 @@
 # backend/apps/users/serializers.py
 
 from rest_framework import serializers
+from .phone import normalize_phone, phone_variants
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
 User = get_user_model()
+
+
+def validate_unique_phone(value, exclude_user=None):
+    """Numéro normalisé en E.164, unique quel que soit le format sous lequel il a été saisi."""
+    try:
+        phone = normalize_phone(value)
+    except ValueError as e:
+        raise serializers.ValidationError(str(e))
+    if phone is None:
+        return None
+    qs = User.objects.filter(phone_number__in=phone_variants(phone))
+    if exclude_user is not None:
+        qs = qs.exclude(pk=exclude_user.pk)
+    if qs.exists():
+        raise serializers.ValidationError("Ce numéro de téléphone est déjà associé à un autre compte.")
+    return phone
+
+
+# Le format est contrôlé et normalisé par validate_unique_phone (et non par la
+# regex du modèle, qui refusait « 074 30 16 39 » avant toute normalisation).
+def _phone_field():
+    return serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=25)
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -28,6 +51,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         help_text="Confirmez votre mot de passe"
     )
     
+    phone_number = _phone_field()
+
     class Meta:
         model = User
         fields = [
@@ -43,7 +68,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             'first_name': {'required': True},
             'last_name': {'required': True},
             'email': {'required': True},
-            'phone_number': {'required': False, 'allow_blank': True},  # ✅ CORRECTION ICI
         }
     
     def validate_email(self, value):
@@ -67,18 +91,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return value.lower()
     
     def validate_phone_number(self, value):
-        """
-        Vérifie que le numéro de téléphone n'est pas déjà utilisé (si fourni)
-        """
-        # ✅ CORRECTION : Accepter les valeurs vides
-        if not value or value.strip() == '':
-            return None  # Retourner None si vide
-        
-        if User.objects.filter(phone_number=value).exists():
-            raise serializers.ValidationError(
-                "Ce numéro de téléphone est déjà associé à un compte."
-            )
-        return value
+        """Normalise le numéro (E.164) et vérifie qu'il n'est pas déjà utilisé."""
+        return validate_unique_phone(value, exclude_user=None)
     
     def validate_password(self, value):
         """
@@ -138,6 +152,8 @@ class UserDetailSerializer(serializers.ModelSerializer):
     has_complete_profile = serializers.BooleanField(read_only=True)
     profile_image = serializers.SerializerMethodField()
     
+    phone_number = _phone_field()
+
     class Meta:
         model = User
         fields = [
@@ -179,19 +195,8 @@ class UserDetailSerializer(serializers.ModelSerializer):
         return None
     
     def validate_phone_number(self, value):
-        """
-        Vérifie que le nouveau numéro n'est pas déjà utilisé par un autre utilisateur
-        """
-        # ✅ CORRECTION : Accepter les valeurs vides
-        if not value or value.strip() == '':
-            return None
-        
-        user = self.context['request'].user
-        if User.objects.filter(phone_number=value).exclude(id=user.id).exists():
-            raise serializers.ValidationError(
-                "Ce numéro de téléphone est déjà utilisé par un autre compte."
-            )
-        return value
+        """Normalise le numéro (E.164) et vérifie qu'il n'est pas déjà utilisé."""
+        return validate_unique_phone(value, exclude_user=self.context['request'].user)
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
@@ -200,6 +205,8 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     Permet de modifier uniquement les informations de profil.
     """
     
+    phone_number = _phone_field()
+
     class Meta:
         model = User
         fields = [
@@ -214,19 +221,8 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         ]
     
     def validate_phone_number(self, value):
-        """
-        Vérifie que le nouveau numéro n'est pas déjà utilisé
-        """
-        # ✅ CORRECTION : Accepter les valeurs vides
-        if not value or value.strip() == '':
-            return None
-        
-        user = self.instance
-        if User.objects.filter(phone_number=value).exclude(id=user.id).exists():
-            raise serializers.ValidationError(
-                "Ce numéro de téléphone est déjà utilisé."
-            )
-        return value
+        """Normalise le numéro (E.164) et vérifie qu'il n'est pas déjà utilisé."""
+        return validate_unique_phone(value, exclude_user=self.instance)
 
 
 class PasswordChangeSerializer(serializers.Serializer):

@@ -9,6 +9,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  height: 100%;
   background: var(--ds-white);
   border-radius: var(--ds-r-lg);
   border: 1px solid var(--ds-gray-200);
@@ -277,29 +278,31 @@
   cursor: pointer;
 }
 
-/* ── Lire un extrait ── */
+/* ── Lire un extrait (lien discret, placé au-dessus du prix) ── */
 .tn-book-card__excerpt {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
-  width: 100%;
-  margin-top: 8px;
-  padding: 7px 10px;
-  border: 1px solid var(--tn-orange);
-  border-radius: 8px;
-  background: transparent;
+  align-self: flex-start;
+  min-height: 32px;
+  margin: 2px 0 0;
+  padding: 4px 0;
+  border: 0;
+  background: none;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
-  color: var(--tn-orange);
+  color: var(--tn-orange-dark, #B5470F);
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  text-decoration: underline;
+  text-decoration-color: rgba(181, 71, 15, 0.35);
+  text-underline-offset: 3px;
+  transition: color 0.2s, text-decoration-color 0.2s;
 }
 .tn-book-card__excerpt:hover,
 .tn-book-card__excerpt:focus-visible {
-  background: var(--tn-orange);
-  color: #fff;
+  color: var(--tn-orange);
+  text-decoration-color: currentColor;
 }
 
 /* ── Featured state ── */
@@ -397,4 +400,23 @@
 @media (hover: none) {
   .tn-book-card:hover { transform: none; box-shadow: var(--tn-shadow-1); }
   .tn-book-card:hover .tn-book-card__cover-img { transform: none; }
+}
+
+/* Les cartes d'une même rangée ont la même hauteur : le bloc prix/« Ajouter »
+   (margin-top: auto) tombe donc au même niveau partout */
+.home-stagger-item,
+.cat-grid > *,
+.bd-related-item {
+  display: flex;
+  flex-direction: column;
+}
+.home-stagger-item > .tn-book-card,
+.cat-grid > * > .tn-book-card {
+  flex: 1;
+}
+
+@media (max-width: 640px) {
+  /* Mobile : on allège la carte (ISBN masqué, avis compacts) */
+  .tn-book-card__ref { display: none; }
+  .tn-book-card__excerpt { font-size: 12px; }
 }

@@ -24,7 +24,7 @@ class OrderCreateTest(APITestCase):
             password='TestPass123!',
             first_name='Buyer',
             last_name='Test',
-            phone_number='+24112345678',
+            phone_number='+24174301639',
             address='123 Rue Test',
             city='Port-Gentil',
         )
@@ -50,7 +50,7 @@ class OrderCreateTest(APITestCase):
         return {
             'items': [{'book_id': self.book.id, 'quantity': 1}],
             'shipping_address': '123 Rue Test',
-            'shipping_phone': '+24112345678',
+            'shipping_phone': '+24174301639',
             'shipping_city': 'Port-Gentil',
         }
 

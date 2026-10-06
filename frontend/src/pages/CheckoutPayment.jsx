@@ -247,7 +247,7 @@ const CheckoutPayment = () => {
               </>
             )}
 
-            <div className="cpay-info">
+            <div className="cpay-info" aria-live="polite">
               {amount && (
                 <div className="cpay-info-row">
                   <span className="cpay-info-label">Montant</span>
@@ -284,9 +284,14 @@ const CheckoutPayment = () => {
               Le paiement expire après {isRedirectPayment ? 30 : 10} minutes sans confirmation.
             </p>
 
+            <p className="cpay-expire-note">
+              Vous pouvez quitter cette page : si vous validez le paiement, votre commande
+              sera confirmée automatiquement.
+            </p>
             <div className="cpay-actions">
+              {/* Ce bouton n'annule rien côté opérateur : on le dit clairement */}
               <button className="cpay-btn cpay-btn--ghost" onClick={handleCancel}>
-                Annuler le paiement
+                Voir mes commandes
               </button>
             </div>
           </>
@@ -393,7 +398,7 @@ const CheckoutPayment = () => {
             <span className="cpay-tag cpay-tag--expired">Délai dépassé</span>
             <h2 className="cpay-heading">Le paiement a expiré</h2>
             <p className="cpay-desc">
-              Votre demande de paiement a expiré après dix minutes
+              Votre demande de paiement a expiré après {isRedirectPayment ? 30 : 10} minutes
               sans confirmation. Aucun montant n&apos;a été débité.
             </p>
             <p className="cpay-desc" style={{ marginTop: '-0.5rem' }}>

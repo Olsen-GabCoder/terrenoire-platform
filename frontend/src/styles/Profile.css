@@ -1125,3 +1125,22 @@
     transform: none !important;
   }
 }
+
+.message.info {
+  background: var(--ds-info-bg, #E3F2FD);
+  color: var(--ds-info, #1565C0);
+  border: 1px solid rgba(21, 101, 192, 0.25);
+}
+.form-hint--error {
+  color: var(--color-error, #c62828);
+  font-weight: 500;
+}
+
+.order-item__cover {
+  display: block;
+  width: 48px;
+  height: 64px;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  flex-shrink: 0;
+}

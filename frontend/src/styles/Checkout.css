@@ -449,27 +449,19 @@
   font-weight: 600; font-size: 0.875rem;
   color: var(--color-gray-800);
 }
-.chk-pay__phone-wrap {
-  display: flex; align-items: center;
+.chk-pay__phone-input {
+  display: block; width: 100%; box-sizing: border-box;
+  min-height: 48px; padding: 0.75rem 0.875rem;
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-sm);
-  overflow: hidden; transition: border-color 0.2s;
+  font-size: 1.0625rem; font-family: inherit;
+  letter-spacing: 0.06em; font-variant-numeric: tabular-nums;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.chk-pay__phone-wrap:focus-within {
+.chk-pay__phone-input:focus {
+  outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(232, 96, 28, 0.1);
-}
-.chk-pay__phone-prefix {
-  padding: 0.75rem; background: var(--color-gray-100);
-  font-size: 0.9375rem; font-weight: 500;
-  color: var(--color-gray-600);
-  border-right: 1px solid var(--color-gray-200);
-  flex-shrink: 0; user-select: none;
-}
-.chk-pay__phone-input {
-  flex: 1; padding: 0.75rem; border: none; outline: none;
-  font-size: 0.9375rem; font-family: inherit;
-  letter-spacing: 0.02em; min-width: 0;
+  box-shadow: 0 0 0 3px rgba(232, 96, 28, 0.15);
 }
 .chk-pay__phone-hint {
   font-size: 0.875rem; color: var(--color-gray-500); margin-top: 0.4rem;
@@ -536,17 +528,6 @@
     padding: 1.25rem 1rem;
   }
 
-  .chk-pay__phone-wrap {
-    flex-wrap: wrap;
-  }
-
-  .chk-pay__phone-prefix {
-    flex-shrink: 0;
-  }
-
-  .chk-pay__phone-input {
-    min-width: 100%;
-  }
 
   .chk-pay__option {
     padding: 0.625rem 0.75rem;
@@ -583,3 +564,46 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* Profil incomplet / commande ebook */
+.chk-section + .chk-section { margin-top: 1rem; }
+.chk-section--warning {
+  border-color: rgba(230, 81, 0, 0.35);
+  background: var(--ds-warning-bg, #FFF3E0);
+}
+.chk-section__text {
+  margin: 0 0 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--color-gray-700);
+}
+.chk-section__text:last-child { margin-bottom: 0; }
+.chk-section__cta {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  min-height: 44px;
+}
+.chk-error {
+  margin: 0 0 1rem;
+  align-items: flex-start;
+  line-height: 1.5;
+}
+.chk-error i { margin-top: 0.2rem; }
+.chk-error a { color: inherit; font-weight: 600; text-decoration: underline; }
+
+/* Focus clavier visible sur les choix de paiement */
+.chk-pay__option:focus-within {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.chk-summary-item__cover {
+  display: block;
+  width: 50px;
+  height: 68px;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Espace entre le bloc du numéro de paiement et le bouton */
+.chk-pay { margin-bottom: 1rem; }

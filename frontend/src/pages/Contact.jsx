@@ -211,7 +211,7 @@ const Contact = () => {
             <div className="ct-faq-list">
               {[
                 ['Commande', 'Panier puis paiement via Moov Money, Airtel Money ou BambooPay.'],
-                ['Livraison', '5-7 jours à Port-Gentil, 7-10 jours dans les autres villes du Gabon.'],
+                ['Livraison', '24 à 72 h à Port-Gentil, 3 à 7 jours à Libreville, 5 à 10 jours à Lambaréné ; retrait sur place ailleurs.'],
                 ['Manuscrit', 'Via le formulaire en ligne ou par email direct.'],
               ].map(([q, a]) => (
                 <div key={q} className="ct-faq-item">
@@ -227,7 +227,6 @@ const Contact = () => {
         </div>
 
       </div>
-      <div className="ct-footer-fade" />
     </div>
   );
 };

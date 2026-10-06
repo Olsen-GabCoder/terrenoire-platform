@@ -156,7 +156,6 @@ const Authors = () => {
           </div>
             </div>
             
-      <div className="auth-footer-fade" />
                       </div>
   );
 };

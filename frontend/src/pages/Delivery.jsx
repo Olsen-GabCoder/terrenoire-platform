@@ -20,7 +20,7 @@ const Delivery = () => {
           <div className="dlv-hero__line" />
           <h1 className="dlv-hero__title">Livraison &amp; <span className="dlv-hero__title-accent">Retours</span></h1>
           <p className="dlv-hero__sub">
-            Livraison rapide sur tout le territoire gabonais et conditions de retour
+            Livraison à Libreville, Port-Gentil et Lambaréné, et conditions de retour
             simplifiées. Vos livres en toute sérénité.
           </p>
         </div>
@@ -42,8 +42,8 @@ const Delivery = () => {
           <div className="dlv-zones">
             {[
               ['fa-location-dot', 'Libreville', 'Capitale', 'var(--color-primary)'],
-              ['fa-location-dot', 'Port-Gentil', 'Siege de Terre Noire Editions', 'var(--tn-gold, #C8956C)'],
-              ['fa-location-dot', 'Lambarene', 'Province du Moyen-Ogooue', 'var(--color-gray-500)'],
+              ['fa-location-dot', 'Port-Gentil', 'Siège de Terre Noire Éditions', 'var(--tn-gold, #C8956C)'],
+              ['fa-location-dot', 'Lambaréné', 'Province du Moyen-Ogooué', 'var(--color-gray-500)'],
             ].map(([icon, zone, desc, color]) => (
               <div key={zone} className="dlv-zone">
                 <div className="dlv-zone__icon" style={{ background: `${color}12`, color }}><i className={`fas ${icon}`} /></div>
@@ -55,7 +55,7 @@ const Delivery = () => {
             ))}
           </div>
           <p className="dlv-note">
-            <i className="fas fa-info-circle" /> Si votre adresse de livraison ne se trouve pas dans l&apos;une de ces trois villes, vous pourrez tout de meme passer commande, mais vous devrez venir retirer votre commande en main propre dans la ville desservie la plus proche. Nous vous contacterons pour coordonner le retrait des que votre commande sera arrivee a destination.
+            <i className="fas fa-info-circle" /> Si votre adresse de livraison ne se trouve pas dans l&apos;une de ces trois villes, vous pourrez tout de même passer commande, mais vous devrez venir la retirer en main propre dans la ville desservie la plus proche. Nous vous contacterons pour organiser le retrait dès que votre commande sera arrivée à destination.
           </p>
         </div>
 
@@ -63,17 +63,18 @@ const Delivery = () => {
         <div className="dlv-card">
           <div className="dlv-section-header">
             <span className="dlv-section-num">01</span>
-            <h2>Delais de livraison</h2>
+            <h2>Délais de livraison</h2>
           </div>
           <p>
-            Votre commande est préparée et expédiée sous <strong>5 à 10 jours ouvrés</strong> au Gabon.
+            Votre commande est préparée puis livrée dans les délais suivants (estimatifs) :
             Nous traitons chaque commande avec soin pour garantir que vos livres arrivent en parfait état.
           </p>
           <div className="dlv-zones">
             {[
-              ['fa-location-dot', 'Port-Gentil & environs', '5 à 7 jours ouvrés', 'var(--color-primary)'],
-              ['fa-city', 'Libreville, Franceville, Lambaréné...', '7 à 10 jours ouvrés', 'var(--tn-gold, #C8956C)'],
-              ['fa-map', 'Autres localités du Gabon', '7 à 10 jours ouvrés', 'var(--color-gray-500)'],
+              ['fa-location-dot', 'Port-Gentil', '24 à 72 heures ouvrées', 'var(--color-primary)'],
+              ['fa-city', 'Libreville', '3 à 7 jours ouvrés', 'var(--tn-gold, #C8956C)'],
+              ['fa-city', 'Lambaréné', '5 à 10 jours ouvrés', 'var(--tn-gold, #C8956C)'],
+              ['fa-map', 'Autres villes du Gabon', 'Retrait dans l\'une des trois villes', 'var(--color-gray-500)'],
             ].map(([icon, zone, delay, color]) => (
               <div key={zone} className="dlv-zone">
                 <div className="dlv-zone__icon" style={{ background: `${color}12`, color }}><i className={`fas ${icon}`} /></div>
@@ -227,7 +228,6 @@ const Delivery = () => {
         </div>
 
       </div>
-      <div className="dlv-footer-fade" />
     </div>
   );
 };

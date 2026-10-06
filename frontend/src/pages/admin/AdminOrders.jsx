@@ -8,6 +8,7 @@ import {
 } from '../../components/admin/AdminPrimitives';
 import { useToast } from '../../components/ui/ToastProvider';
 import api from '../../services/api';
+import { formatPhoneDisplay, phoneHref } from '../../utils/phone';
 
 const fmtPrice = (n) => Number(n || 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 });
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '--';
@@ -30,13 +31,17 @@ const AdminOrders = () => {
     finally { setLoading(false); }
   };
 
+  const STATUS_LABELS = { PENDING: 'En attente', PAID: 'Payé', SHIPPED: 'Expédié', CANCELLED: 'Annulé' };
+
   const updateOrderStatus = async (orderId, newStatus) => {
+    // Un changement de statut envoie un e-mail au client : on confirme d'abord
+    if (!window.confirm(`Passer la commande #${orderId} au statut « ${STATUS_LABELS[newStatus] || newStatus} » ? Le client sera prévenu par e-mail.`)) return;
     try {
       const r = await api.patch(`/orders/${orderId}/`, { status: newStatus });
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...r.data } : o));
       setSelectedOrder(prev => prev && prev.id === orderId ? { ...prev, ...r.data } : prev);
       toast.success('Statut de la commande mis à jour');
-    } catch (e) { toast.error('Erreur lors de la mise à jour du statut'); }
+    } catch (e) { toast.error(e.response?.data?.error || 'Erreur lors de la mise à jour du statut'); }
   };
 
   const counts = useMemo(() => ({
@@ -167,7 +172,8 @@ const AdminOrders = () => {
                   <div style={{ fontFamily: 'var(--tn-serif)', fontSize: 17, fontWeight: 600, color: 'var(--tn-gray-900)' }}>{sel.user?.full_name || sel.user?.username || 'N/A'}</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 8, fontSize: 12, color: 'var(--tn-gray-700)' }}>
                     <span><i className="fas fa-envelope" style={{ color: 'var(--tn-orange)', width: 16, marginRight: 4 }} />{sel.user?.email || 'N/A'}</span>
-                    {(sel.user?.phone_number || sel.shipping_phone) && <span><i className="fas fa-phone" style={{ color: 'var(--tn-orange)', width: 16, marginRight: 4 }} />{sel.user?.phone_number || sel.shipping_phone}</span>}
+                    {/* Téléphone de livraison en priorité (c'est celui du destinataire), sinon celui du profil */}
+                    {(sel.shipping_phone || sel.user?.phone_number) && <a href={phoneHref(sel.shipping_phone || sel.user?.phone_number)} style={{ color: 'inherit' }}><i className="fas fa-phone" style={{ color: 'var(--tn-orange)', width: 16, marginRight: 4 }} />{formatPhoneDisplay(sel.shipping_phone || sel.user?.phone_number)}</a>}
                     {sel.shipping_address && <span style={{ gridColumn: '1 / -1' }}><i className="fas fa-location-dot" style={{ color: 'var(--tn-orange)', width: 16, marginRight: 4 }} />{sel.shipping_address}{sel.shipping_city ? `, ${sel.shipping_city}` : ''}</span>}
                   </div>
                 </div>
@@ -185,7 +191,12 @@ const AdminOrders = () => {
                     }
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontFamily: 'var(--tn-serif)', fontWeight: 600, fontSize: 14, color: 'var(--tn-gray-900)' }}>{item.book?.title || 'Article'}</div>
-                      <div style={{ fontSize: 11, color: 'var(--tn-gray-500)', marginTop: 2 }}>{item.quantity} x {fmtPrice(item.price)} FCFA</div>
+                      <div style={{ fontSize: 11, color: 'var(--tn-gray-500)', marginTop: 2, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 700, letterSpacing: '0.04em', padding: '1px 6px', borderRadius: 4, background: item.format_purchased === 'EBOOK' ? 'rgba(21,101,192,0.1)' : 'rgba(232,96,28,0.1)', color: item.format_purchased === 'EBOOK' ? '#1565C0' : '#B5470F' }}>
+                          {item.format_purchased === 'EBOOK' ? 'EBOOK' : 'PAPIER'}
+                        </span>
+                        {item.quantity} × {fmtPrice(item.price)} FCFA
+                      </div>
                     </div>
                     <div style={{ fontFamily: 'var(--tn-serif)', fontWeight: 700, color: 'var(--tn-orange)', fontSize: 14, flexShrink: 0 }}>
                       {fmtPrice(item.quantity * item.price)} <span style={{ fontSize: 9, color: 'var(--tn-gray-500)', fontWeight: 500 }}>FCFA</span>

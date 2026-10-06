@@ -257,7 +257,6 @@ const Cookies = () => (
       </div>
 
     </div>
-    <div className="cookies-footer-fade" />
   </div>
 );
 

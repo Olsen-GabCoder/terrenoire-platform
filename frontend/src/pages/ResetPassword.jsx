@@ -197,7 +197,6 @@ const ResetPassword = () => {
         </div>
       </div>
 
-      <div className="login-footer-fade" />
     </div>
   );
 };

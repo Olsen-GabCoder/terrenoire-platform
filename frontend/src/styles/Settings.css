@@ -250,3 +250,22 @@
     animation: none !important;
   }
 }
+
+.settings-password {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 420px;
+}
+.settings-password .settings-btn {
+  align-self: flex-start;
+  min-height: 44px;
+}
+.settings-note {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+}
+.settings-toggle:focus-within .settings-toggle__slider {
+  outline: 2px solid var(--color-primary, #E8601C);
+  outline-offset: 2px;
+}

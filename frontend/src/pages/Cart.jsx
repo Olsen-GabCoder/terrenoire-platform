@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useDeliveryConfig } from '../context/DeliveryConfigContext';
 import { couponAPI } from '../services/api';
 import TnAlert from '../components/ui/TnAlert';
+import { TnBookCover } from '../components/ui';
 import '../styles/Cart.css';
 
 const Cart = () => {
@@ -25,8 +26,6 @@ const Cart = () => {
   const navigate = useNavigate();
   const [couponCode, setCouponCode] = useState('');
   const [couponMsg, setCouponMsg] = useState(null);
-  const [notes, setNotes] = useState('');
-  const [checking, setChecking] = useState(false);
   const [applying, setApplying] = useState(false);
 
   const fmt = (p) =>
@@ -82,10 +81,11 @@ const Cart = () => {
   const checkout = () => {
     if (!isAuthenticated) { navigate('/login', { state: { from: '/cart' } }); return; }
     if (!cartItems.length) return;
-    setChecking(true);
-    setTimeout(() => {
-      navigate('/checkout', { state: { orderNotes: notes } });
-    }, 500);
+    navigate('/checkout');
+  };
+
+  const handleClearCart = () => {
+    if (window.confirm('Vider le panier ? Tous les articles seront retirés.')) clearCart();
   };
 
   /* ── PANIER VIDE ── */
@@ -115,7 +115,7 @@ const Cart = () => {
             </div>
             <div className="crt-empty__features">
               {[
-                { ico: 'fas fa-truck', t: 'Livraison rapide', d: '5-10 jours au Gabon' },
+                { ico: 'fas fa-truck', t: 'Livraison', d: 'Libreville, Port-Gentil, Lambaréné' },
                 { ico: 'fas fa-mobile-alt', t: 'Paiement', d: 'Moov Money, Airtel Money, BambooPay' },
                 { ico: 'fas fa-lock', t: 'Paiement sécurisé', d: 'Transactions protégées' },
               ].map((f) => (
@@ -128,7 +128,6 @@ const Cart = () => {
             </div>
           </div>
         </div>
-        <div className="crt-footer-fade" />
       </div>
     );
   }
@@ -156,36 +155,30 @@ const Cart = () => {
           <div className="crt-items">
             <div className="crt-items__head">
               <h2>Articles</h2>
-              <button onClick={clearCart} className="crt-clear">
+              <button type="button" onClick={handleClearCart} className="crt-clear">
                 <i className="fas fa-trash-alt" /> Vider
               </button>
             </div>
 
             {cartItems.map((item) => (
               <div className="crt-card" key={`${item.id}_${item.format_purchased}`}>
-                <div
-                  className="crt-card__img"
-                  onClick={() => navigate(`/books/${item.id}`)}
-                >
-                  <img
-                    src={item.cover_image || '/images/default-book-cover.jpg'}
-                    alt={item.title}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
+                <Link to={`/books/${item.id}`} className="crt-card__img" aria-label={item.title}>
+                  {item.cover_image ? (
+                    <img src={item.cover_image} alt="" loading="lazy" decoding="async" />
+                  ) : (
+                    <TnBookCover book={item} variant="compact" />
+                  )}
+                </Link>
                 <div className="crt-card__body">
                   <div className="crt-card__top">
-                    <h3
-                      className="crt-card__title"
-                      onClick={() => navigate(`/books/${item.id}`)}
-                    >
-                      {item.title}
+                    <h3 className="crt-card__title">
+                      <Link to={`/books/${item.id}`}>{item.title}</Link>
                     </h3>
                     <button
+                      type="button"
                       onClick={() => removeFromCart(item.id, item.format_purchased)}
                       className="crt-card__rm"
-                      aria-label="Retirer"
+                      aria-label={`Retirer « ${item.title} » du panier`}
                     >
                       <i className="fas fa-times" />
                     </button>
@@ -198,17 +191,19 @@ const Cart = () => {
                   </span>
                   <div className="crt-card__bottom">
                     {item.format_purchased === 'EBOOK' ? (
-                      <div className="crt-qty crt-qty--locked">
-                        <span>1</span>
-                      </div>
+                      <span className="crt-card__single">Exemplaire numérique</span>
                     ) : (
                       <div className="crt-qty">
                         <button
+                          type="button"
+                          aria-label="Diminuer la quantité"
                           onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1), item.format_purchased)}
                           disabled={item.quantity <= 1}
                         >−</button>
                         <span>{item.quantity}</span>
                         <button
+                          type="button"
+                          aria-label="Augmenter la quantité"
                           onClick={() => updateQuantity(item.id, Math.min(99, item.quantity + 1), item.format_purchased)}
                           disabled={item.quantity >= 99}
                         >+</button>
@@ -218,7 +213,7 @@ const Cart = () => {
                       {item.original_price && Number(item.original_price) > Number(item.price) && (
                         <span className="crt-card__old-price">{fmt(item.original_price)}</span>
                       )}
-                      <span className="crt-card__unit">{fmt(item.price)} × {item.quantity}</span>
+                      {item.quantity > 1 && <span className="crt-card__unit">{fmt(item.price)} × {item.quantity}</span>}
                       <strong>{fmt(item.price * item.quantity)}</strong>
                     </div>
                   </div>
@@ -234,9 +229,10 @@ const Cart = () => {
 
               {/* Coupon */}
               <div className="crt-coupon">
-                <label>Code promo</label>
+                <label htmlFor="crt-coupon-input">Code promo</label>
                 <div className="crt-coupon__row">
                   <input
+                    id="crt-coupon-input"
                     type="text"
                     placeholder="Ex: MAISON10"
                     value={appliedCoupon?.code ?? couponCode}
@@ -244,8 +240,8 @@ const Cart = () => {
                     onKeyDown={(e) => e.key === 'Enter' && applyCoupon()}
                     readOnly={!!appliedCoupon}
                   />
-                  <button onClick={applyCoupon} disabled={applying || !couponCode.trim()}>
-                    {applying ? '...' : 'Appliquer'}
+                  <button type="button" onClick={applyCoupon} disabled={applying || !couponCode.trim() || !!appliedCoupon}>
+                    {applying ? '…' : 'Appliquer'}
                   </button>
                 </div>
                 {couponMsg && (
@@ -258,13 +254,14 @@ const Cart = () => {
 
               {hasPhysicalBook && (
                 <TnAlert variant="info" style={{ marginBottom: 16 }}>
-                  Terre Noire Editions livre les exemplaires physiques uniquement a Libreville, Port-Gentil et Lambarene. Si vous residez ailleurs, vous devez venir recuperer votre commande dans l'une de ces trois villes.
+                  Livraison des livres papier à Libreville, Port-Gentil et Lambaréné. Ailleurs au Gabon,
+                  la commande est à retirer dans l&apos;une de ces trois villes.
                 </TnAlert>
               )}
 
               {!hasPhysicalBook && cartItems.length > 0 && (
                 <TnAlert variant="info" style={{ marginBottom: 16 }}>
-                  Votre ebook sera disponible immédiatement dans votre espace personnel après confirmation du paiement.
+                  Pas de livraison pour un ebook : il sera lisible en ligne dans « Mes commandes » dès la confirmation du paiement.
                 </TnAlert>
               )}
 
@@ -284,10 +281,12 @@ const Cart = () => {
                     <span>-{fmt(discountAmt)}</span>
                   </div>
                 )}
-                <div className="crt-row">
-                  <span>Livraison {shipping === 0 && <em className="crt-free">Gratuit</em>}</span>
-                  <span>{shipping === 0 ? 'Gratuit' : fmt(shipping)}</span>
-                </div>
+                {hasPhysicalBook && (
+                  <div className="crt-row">
+                    <span>Livraison</span>
+                    <span>{shipping === 0 ? <em className="crt-free">Gratuite</em> : fmt(shipping)}</span>
+                  </div>
+                )}
                 {shipping > 0 && subtotal < shippingFreeThreshold && (
                   <div className="crt-progress-notice">
                     <p>Plus que {fmt(shippingFreeThreshold - subtotal)} pour la livraison gratuite</p>
@@ -302,24 +301,12 @@ const Cart = () => {
                 </div>
               </div>
 
-              {/* Notes */}
-              <div className="crt-notes">
-                <label>Notes (optionnel)</label>
-                <textarea
-                  rows="3"
-                  placeholder="Instructions spéciales..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  maxLength={500}
-                />
-              </div>
-
               {/* Actions */}
               <div className="crt-actions">
-                <button onClick={checkout} disabled={checking} className="crt-btn crt-btn--primary crt-btn--full">
-                  {checking ? 'Traitement...' : <>Procéder au paiement <span>{fmt(total)}</span></>}
+                <button type="button" onClick={checkout} className="crt-btn crt-btn--primary crt-btn--full">
+                  Passer la commande
                 </button>
-                <button onClick={() => navigate('/catalog')} className="crt-btn crt-btn--outline crt-btn--full">
+                <button type="button" onClick={() => navigate('/catalog')} className="crt-btn crt-btn--outline crt-btn--full">
                   Continuer mes achats
                 </button>
               </div>
@@ -329,7 +316,9 @@ const Cart = () => {
                 {[
                   { ico: 'fas fa-lock', t: 'Paiement sécurisé' },
                   { ico: 'fas fa-mobile-alt', t: 'Moov Money, Airtel Money, BambooPay' },
-                  { ico: 'fas fa-truck', t: 'Livraison rapide' },
+                  hasPhysicalBook
+                    ? { ico: 'fas fa-truck', t: 'Livraison à Libreville, Port-Gentil, Lambaréné' }
+                    : { ico: 'fas fa-book-open-reader', t: 'Lecture en ligne immédiate' },
                 ].map((g) => (
                   <div className="crt-guar" key={g.t}>
                     <i className={g.ico} /> {g.t}
@@ -341,7 +330,6 @@ const Cart = () => {
 
         </div>
       </div>
-      <div className="crt-footer-fade" />
     </div>
   );
 };

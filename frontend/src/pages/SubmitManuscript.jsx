@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import manuscriptService from '../services/manuscriptService';
 import TnInput from '../components/ui/TnInput';
+import TnPhoneInput from '../components/ui/TnPhoneInput';
+import { validatePhone, phoneForApi } from '../utils/phone';
 import TnSelect from '../components/ui/TnSelect';
 import TnTextarea from '../components/ui/TnTextarea';
 import TnButton from '../components/ui/TnButton';
@@ -63,11 +65,6 @@ const SubmitManuscript = () => {
     if (fieldErrors[name]) setFieldErrors((p) => ({ ...p, [name]: null }));
   };
 
-  const validatePhone = (phone) => {
-    const digits = phone.replace(/\D/g, '');
-    return digits.length >= 8;
-  };
-
   const descWordCount = formData.description.trim() ? formData.description.trim().split(/\s+/).length : 0;
 
   const handleFileChange = (e) => {
@@ -109,8 +106,9 @@ const SubmitManuscript = () => {
       return;
     }
 
-    if (!validatePhone(formData.phone_number)) {
-      setFieldErrors((p) => ({ ...p, phone_number: 'Au moins 8 chiffres requis' }));
+    const phoneError = validatePhone(formData.phone_number, { required: true, allowForeign: true });
+    if (phoneError) {
+      setFieldErrors((p) => ({ ...p, phone_number: phoneError }));
       setIsSubmitting(false);
       return;
     }
@@ -133,7 +131,7 @@ const SubmitManuscript = () => {
       submitData.append('author_name', formData.author_name);
       if (formData.pen_name) submitData.append('pen_name', formData.pen_name);
       submitData.append('email', formData.email);
-      submitData.append('phone_number', formData.phone_number);
+      submitData.append('phone_number', phoneForApi(formData.phone_number));
       if (formData.country) submitData.append('country', formData.country);
       submitData.append('genre', formData.genre);
       submitData.append('language', formData.language);
@@ -401,16 +399,13 @@ const SubmitManuscript = () => {
                   leftIcon={<i className="fas fa-envelope" />}
                 />
 
-                <TnInput
-                  label="Téléphone"
-                  type="tel"
+                <TnPhoneInput
                   name="phone_number"
                   value={formData.phone_number}
                   onChange={handleChange}
-                  placeholder="+241 XX XX XX XX"
                   required
+                  helper="Hors du Gabon : format international, ex. +33 6 12 34 56 78"
                   error={fieldErrors.phone_number}
-                  leftIcon={<i className="fas fa-phone" />}
                 />
 
                 <TnInput

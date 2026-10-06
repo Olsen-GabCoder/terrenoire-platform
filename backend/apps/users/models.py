@@ -15,7 +15,7 @@ class User(AbstractUser):
     # Validateur pour le numero de telephone
     phone_regex = RegexValidator(
         regex=r'^(\+[1-9]\d{7,14}|0\d{7,9})$',
-        message="Format accepte : +241XXXXXXXX (international) ou 0XXXXXXXX (local, 8-10 chiffres)."
+        message="Format accepté : +24174301639 (international) ou 074301639 (local)."
     )
     
     # Champs supplémentaires - TÉLÉPHONE CORRIGÉ
@@ -26,7 +26,7 @@ class User(AbstractUser):
         null=True,  # ✅ AJOUTÉ: Permet NULL en base de données
         blank=True,  # ✅ AJOUTÉ: Permet champ vide dans les formulaires
         verbose_name="Numéro de téléphone",
-        help_text="Format: +243XXXXXXXXX (requis pour Mobile Money)"
+        help_text="Format international : +24174301639 (nécessaire pour commander)"
     )
     
     address = models.TextField(

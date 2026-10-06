@@ -30,16 +30,16 @@ class BaseOrderTestCase(APITestCase):
         SiteConfig.get_config()
         self.user = User.objects.create_user(
             username='buyer', email='buyer@example.com', password='TestPass123!',
-            first_name='Buyer', last_name='Test', phone_number='+24112345678',
+            first_name='Buyer', last_name='Test', phone_number='+24174301639',
             address='123 Rue Test', city='Port-Gentil',
         )
         self.other = User.objects.create_user(
             username='other', email='other@example.com', password='TestPass123!',
-            phone_number='+24187654321',
+            phone_number='+24162654321',
         )
         self.admin = User.objects.create_user(
             username='admin', email='admin@example.com', password='TestPass123!',
-            is_staff=True, phone_number='+24100000000',
+            is_staff=True, phone_number='+24166000000',
         )
         cat, _ = Category.objects.get_or_create(slug='roman', defaults={'name': 'Roman'})
         author, _ = Author.objects.get_or_create(slug='auteur-sec', defaults={'full_name': 'Auteur Sec'})
@@ -61,7 +61,7 @@ class BaseOrderTestCase(APITestCase):
         payload = {
             'items': [{'book_id': self.book.id, 'quantity': 1}],
             'shipping_address': '123 Rue Test',
-            'shipping_phone': '+24112345678',
+            'shipping_phone': '+24174301639',
             'shipping_city': 'Port-Gentil',
         }
         payload.update(extra)
@@ -267,7 +267,7 @@ class TokenRefreshTests(APITestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_refresh_rotates_and_blacklists(self):
-        user = User.objects.create_user(username='r', email='r@example.com', password='TestPass123!', phone_number='+24111111111')
+        user = User.objects.create_user(username='r', email='r@example.com', password='TestPass123!', phone_number='+24165111111')
         refresh = str(RefreshToken.for_user(user))
         first = self.client.post('/api/token/refresh/', {'refresh': refresh}, format='json')
         self.assertEqual(first.status_code, 200)

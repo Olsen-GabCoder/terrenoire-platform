@@ -15,13 +15,11 @@
 .mist-layer { opacity: 0; transition: opacity 1.4s var(--sep-ease) 0.15s; }
 .sep.in-view .mist-layer { opacity: 1; }
 
-/* Couche 2 — Wave back (depth) */
-.wave-back { opacity: 0; transform: translateY(8px); transition: opacity 1.4s var(--sep-ease) 0.25s, transform 1.4s var(--sep-ease) 0.25s; }
-.sep.in-view .wave-back { opacity: 1; transform: translateY(0); }
-
-/* Couche 3 — Wave fill */
-.wave-fill { opacity: 0; transition: opacity 1.2s var(--sep-ease) 0.35s; }
-.sep.in-view .wave-fill { opacity: 1; }
+/* Couches 2-3 — Vagues : toujours visibles. Un fondu sur fond noir faisait
+   apparaître une bande grise à bord droit au-dessus de la vague. Seuls le trait
+   doré, les particules et les ancres sont animés. */
+.wave-back { opacity: 1; }
+.wave-fill { opacity: 1; }
 
 /* Couche 4 — Glow trace */
 .wave-glow { fill: none; stroke: url(#trace-gradient); stroke-width: 5; stroke-linecap: round; vector-effect: non-scaling-stroke; filter: url(#trace-glow); stroke-dasharray: 1800; stroke-dashoffset: 1800; opacity: 0; transition: stroke-dashoffset 2.8s var(--sep-ease) 0.4s, opacity 0.9s var(--sep-ease) 0.4s; }

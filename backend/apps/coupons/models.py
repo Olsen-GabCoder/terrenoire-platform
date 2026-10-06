@@ -59,14 +59,14 @@ class Coupon(models.Model):
         if self.valid_from and now < self.valid_from:
             return "Ce code promo n'est pas encore valide."
         if self.valid_until and now > self.valid_until:
-            return "Ce code promo a expire."
+            return "Ce code promo a expiré."
         if self.max_uses is not None and self.usage_count >= self.max_uses:
             return "Ce code promo a atteint sa limite d'utilisation."
         if self.recipient_email and user is not None and getattr(user, 'is_authenticated', False):
             if (user.email or '').strip().lower() != self.recipient_email.strip().lower():
-                return "Ce code promo est reserve a un autre client."
+                return "Ce code promo est réservé à un autre client."
         if subtotal is not None and self.min_order_amount and Decimal(subtotal) < self.min_order_amount:
-            return f"Ce code promo necessite un minimum de commande de {int(self.min_order_amount)} FCFA."
+            return f"Ce code promo nécessite un minimum de commande de {int(self.min_order_amount)} FCFA."
         return None
 
     def compute_discount(self, subtotal):

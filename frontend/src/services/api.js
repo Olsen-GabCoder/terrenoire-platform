@@ -177,26 +177,88 @@ export const authAPI = {
 };
 
 // --- HELPER D'ERREUR ---
-export const handleApiError = (error) => {
-  if (error.response) {
-    const data = error.response.data;
-    if (typeof data === 'string') return data;
-    if (data.detail) return typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
-    if (data.message) return data.message;
-    if (typeof data === 'object') {
-      const parts = [];
-      for (const [key, val] of Object.entries(data)) {
-        const msg = Array.isArray(val) ? val.join(' ') : String(val);
-        parts.push(`${key}: ${msg}`);
-      }
-      return parts.length ? parts.join(' • ') : 'Erreur de validation';
-    }
-    return 'Erreur inconnue';
-  } else if (error.request) {
-    return "Impossible de contacter le serveur. Vérifiez votre connexion.";
-  } else {
-    return error.message || 'Erreur inconnue';
-  }
+
+// Libellés lisibles des champs renvoyés par l'API (jamais de nom technique à l'écran)
+const FIELD_LABELS = {
+  username: "Nom d'utilisateur",
+  email: 'E-mail',
+  password: 'Mot de passe',
+  password_confirm: 'Confirmation du mot de passe',
+  old_password: 'Mot de passe actuel',
+  new_password: 'Nouveau mot de passe',
+  new_password_confirm: 'Confirmation du mot de passe',
+  first_name: 'Prénom',
+  last_name: 'Nom',
+  phone_number: 'Téléphone',
+  phone: 'Téléphone',
+  address: 'Adresse',
+  city: 'Ville',
+  shipping_address: 'Adresse de livraison',
+  shipping_city: 'Ville de livraison',
+  shipping_phone: 'Téléphone de livraison',
+  coupon_code: 'Code promo',
+  items: 'Articles',
+  quantity: 'Quantité',
+  file: 'Fichier',
+  title: 'Titre',
+  description: 'Description',
+  page_count: 'Nombre de pages',
+  message: 'Message',
+  subject: 'Sujet',
+  name: 'Nom',
 };
+
+const flattenMessages = (val) => {
+  if (val == null) return [];
+  if (Array.isArray(val)) return val.flatMap(flattenMessages);
+  if (typeof val === 'object') return Object.values(val).flatMap(flattenMessages);
+  return [String(val)];
+};
+
+/**
+ * Analyse une erreur axios/DRF.
+ * Retourne { message, fieldErrors } : `message` est une phrase lisible,
+ * `fieldErrors` associe chaque champ à son message (pour l'afficher sous le champ).
+ */
+export const parseApiError = (error) => {
+  if (!error?.response) {
+    if (error?.request) {
+      return { message: 'Impossible de joindre le serveur. Vérifiez votre connexion internet puis réessayez.', fieldErrors: {} };
+    }
+    return { message: error?.message || 'Une erreur inattendue est survenue.', fieldErrors: {} };
+  }
+  const { status, data } = error.response;
+  if (status === 429) {
+    return { message: 'Trop de tentatives. Patientez quelques minutes avant de réessayer.', fieldErrors: {} };
+  }
+  if (status >= 500) {
+    return { message: 'Le serveur rencontre un problème. Réessayez dans quelques instants.', fieldErrors: {} };
+  }
+  if (typeof data === 'string' || data == null) {
+    return { message: status === 404 ? 'Élément introuvable.' : 'Une erreur est survenue.', fieldErrors: {} };
+  }
+  if (Array.isArray(data)) {
+    return { message: flattenMessages(data).join(' '), fieldErrors: {} };
+  }
+  const fieldErrors = {};
+  const general = [];
+  for (const [key, val] of Object.entries(data)) {
+    const msgs = flattenMessages(val);
+    if (!msgs.length) continue;
+    if (['detail', 'error', 'message', 'non_field_errors'].includes(key)) {
+      general.push(...msgs);
+    } else {
+      fieldErrors[key] = msgs.join(' ');
+    }
+  }
+  const fieldSummary = Object.entries(fieldErrors).map(
+    ([key, msg]) => (FIELD_LABELS[key] ? `${FIELD_LABELS[key]} : ${msg}` : msg)
+  );
+  const message = [...general, ...fieldSummary].join(' ') || 'Une erreur est survenue.';
+  return { message, fieldErrors };
+};
+
+/** Version texte (rétrocompatible) : une phrase lisible. */
+export const handleApiError = (error) => parseApiError(error).message;
 
 export default api;

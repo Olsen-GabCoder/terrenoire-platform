@@ -4,6 +4,9 @@ import { useAuth } from '../context/AuthContext';
 import orderService from '../services/orderService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/Orders.css';
+import { formatPhoneDisplay } from '../utils/phone';
+import { parseApiError } from '../services/api';
+import { TnBookCover } from '../components/ui';
 
 const Orders = () => {
   const { user, authChecked } = useAuth();
@@ -50,6 +53,7 @@ const Orders = () => {
   };
 
   const handleCancelOrder = async (orderId) => {
+    if (!window.confirm(`Annuler la commande #${orderId} ? Cette action est définitive.`)) return;
     setCancellingId(orderId);
     try {
       await orderService.cancelOrder(orderId);
@@ -60,7 +64,7 @@ const Orders = () => {
       );
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.error || 'Impossible d\'annuler la commande.');
+      setError(parseApiError(err).message);
     } finally {
       setCancellingId(null);
     }
@@ -161,12 +165,11 @@ const Orders = () => {
                             to={`/books/${item.book?.id}`}
                             className="ord-item__cover"
                           >
-                            <img
-                              src={item.book?.cover_image || '/images/default-book-cover.jpg'}
-                              alt={item.book?.title}
-                                loading="lazy"
-                                decoding="async"
-                            />
+                            {item.book?.cover_image ? (
+                              <img src={item.book.cover_image} alt="" loading="lazy" decoding="async" />
+                            ) : (
+                              <TnBookCover book={item.book || {}} variant="compact" />
+                            )}
                           </Link>
                           <div className="ord-item__details">
                             <Link to={`/books/${item.book?.id}`} className="ord-item__title">
@@ -176,14 +179,17 @@ const Orders = () => {
                               {item.book?.author?.full_name || 'Auteur inconnu'}
                             </p>
                             <span className="ord-item__qty">
-                              Quantité : {item.quantity}
+                              <span className={`ord-item__format ord-item__format--${item.format_purchased === 'EBOOK' ? 'ebook' : 'paper'}`}>
+                                {item.format_purchased === 'EBOOK' ? 'Ebook' : 'Papier'}
+                              </span>
+                              {item.format_purchased !== 'EBOOK' && <> · Quantité : {item.quantity}</>}
                             </span>
-                            {order.status === 'PAID' && item.format_purchased === 'EBOOK' && (
+                            {['PAID', 'SHIPPED'].includes(order.status) && item.format_purchased === 'EBOOK' && (
                               <Link
                                 to={`/books/${item.book?.id}/read`}
                                 className="ord-btn ord-btn--read"
                               >
-                                <i className="fas fa-book-reader" /> Lire mon ebook
+                                <i className="fas fa-book-open-reader" /> Lire mon ebook
                               </Link>
                             )}
                           </div>
@@ -196,13 +202,21 @@ const Orders = () => {
 
                     <div className="ord-card__footer">
                       <div className="ord-card__shipping">
-                        <p>
-                          <strong>Livraison :</strong>{' '}
-                          {order.shipping_address}, {order.shipping_city}
-                        </p>
-                        <p>
-                          <strong>Téléphone :</strong> {order.shipping_phone}
-                        </p>
+                        {order.shipping_address ? (
+                          <>
+                            <p>
+                              <strong>Livraison :</strong>{' '}
+                              {[order.shipping_address, order.shipping_city].filter(Boolean).join(', ')}
+                            </p>
+                            {order.shipping_phone && (
+                              <p>
+                                <strong>Téléphone :</strong> {formatPhoneDisplay(order.shipping_phone)}
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <p>Commande numérique : aucune livraison.</p>
+                        )}
                       </div>
                       <div className="ord-card__total">
                         <span>Total</span>
@@ -211,25 +225,27 @@ const Orders = () => {
                     </div>
 
                     <div className="ord-card__actions">
-                      <button
-                        type="button"
-                        className="ord-btn ord-btn--outline"
-                        onClick={() => handleDownloadInvoice(order.id)}
-                        disabled={downloadingId === order.id}
-                      >
-                        {downloadingId === order.id ? (
-                          <><i className="fas fa-spinner fa-spin" /> Téléchargement…</>
-                        ) : (
-                          <><i className="fas fa-file-pdf" /> Télécharger la facture</>
-                        )}
-                      </button>
+                      {['PAID', 'SHIPPED'].includes(order.status) && (
+                        <button
+                          type="button"
+                          className="ord-btn ord-btn--outline"
+                          onClick={() => handleDownloadInvoice(order.id)}
+                          disabled={downloadingId === order.id}
+                        >
+                          {downloadingId === order.id ? (
+                            <><i className="fas fa-spinner fa-spin" /> Téléchargement…</>
+                          ) : (
+                            <><i className="fas fa-file-invoice" /> Télécharger la facture</>
+                          )}
+                        </button>
+                      )}
                       {order.status === 'PENDING' && (
                         <>
                           <Link
                             to={`/checkout?retry=${order.id}`}
                             className="ord-btn ord-btn--primary"
                           >
-                            <i className="fas fa-mobile-alt" /> Payer cette commande
+                            <i className="fas fa-credit-card" /> Payer cette commande
                           </Link>
                           <button
                             type="button"
@@ -253,7 +269,6 @@ const Orders = () => {
           )}
         </div>
       </div>
-      <div className="ord-footer-fade" />
     </div>
   );
 };

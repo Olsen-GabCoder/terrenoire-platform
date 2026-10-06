@@ -113,7 +113,6 @@ const ForgotPassword = () => {
         </div>
       </div>
 
-      <div className="login-footer-fade" />
     </div>
   );
 };

@@ -475,7 +475,7 @@ const Home = () => {
         </section>
       )}
 
-      <SectionSeparator direction="cream-to-dark" variant={3} />
+      {/* La transition vers le pied de page est ajoutée une seule fois par App.jsx */}
     </div>
   );
 };

@@ -1,4 +1,6 @@
 from rest_framework import serializers
+
+from apps.users.phone import normalize_phone
 from .models import Manuscript
 
 
@@ -71,13 +73,14 @@ class ManuscriptSerializer(serializers.ModelSerializer):
         return value.lower()
     
     def validate_phone_number(self, value):
-        """Validation personnalisée du numéro de téléphone"""
-        cleaned = ''.join(c for c in value if c.isdigit())
-        if len(cleaned) < 8:
-            raise serializers.ValidationError(
-                "Le numéro de téléphone doit contenir au moins 8 chiffres."
-            )
-        return value.strip()
+        """Numéro normalisé (E.164) : gabonais ou international."""
+        try:
+            phone = normalize_phone(value)
+        except ValueError as e:
+            raise serializers.ValidationError(str(e))
+        if not phone:
+            raise serializers.ValidationError("Le numéro de téléphone est requis.")
+        return phone
 
     def validate_page_count(self, value):
         """Validation du nombre de pages"""

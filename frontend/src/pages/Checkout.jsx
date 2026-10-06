@@ -1,23 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useDeliveryConfig } from '../context/DeliveryConfigContext';
 import orderService from '../services/orderService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import TnAlert from '../components/ui/TnAlert';
+import { parseApiError } from '../services/api';
+import {
+  toLocalGabon, isGabonMobile, detectOperator, formatPhoneTyping,
+  phoneForInput, phoneForApi, validatePhone,
+} from '../utils/phone';
 import '../styles/Checkout.css';
+import TnBookCover from '../components/ui/TnBookCover';
 
 const OPERATOR_NAMES = { moov_money: 'Moov Money', airtel_money: 'Airtel Money' };
 
-/** Numéro gabonais au format local à 9 chiffres (accepte +241 / 241 / 8 chiffres). */
-const normalizeGabonPhone = (value) => {
-  let digits = String(value || '').replace(/\D/g, '');
-  if (digits.startsWith('00241')) digits = digits.slice(5);
-  else if (digits.startsWith('241') && digits.length > 9) digits = digits.slice(3);
-  if (digits.length === 8) digits = `0${digits}`;
-  return digits;
-};
+const PAYMENT_METHODS = [
+  { value: 'airtel_money', name: 'Airtel Money', desc: 'Validation sur votre téléphone', icon: 'fas fa-mobile-screen-button', iconClass: 'chk-pay__icon--airtel' },
+  { value: 'moov_money', name: 'Moov Money', desc: 'Validation sur votre téléphone', icon: 'fas fa-mobile-screen-button', iconClass: 'chk-pay__icon--moov' },
+  { value: 'bamboopay', name: 'BambooPay', desc: 'Paiement sur la page sécurisée BambooPay', icon: 'fas fa-lock', iconClass: 'chk-pay__icon--bamboopay' },
+];
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -36,8 +39,11 @@ const Checkout = () => {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const errorRef = useRef(null);
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('moov_money');
+  const [paymentMethod, setPaymentMethod] = useState('airtel_money');
+  // Tant que le client n'a pas choisi lui-même, l'opérateur suit le numéro saisi
+  const [methodTouched, setMethodTouched] = useState(false);
   const [phoneForPayment, setPhoneForPayment] = useState('');
 
   // Retry mode state
@@ -100,12 +106,13 @@ const Checkout = () => {
       // Pré-remplir sans écraser ce que l'utilisateur a déjà saisi
       setFormData((prev) => ({
         shipping_address: prev.shipping_address || user.address || '',
-        shipping_phone: prev.shipping_phone || user.phone_number || '',
+        shipping_phone: prev.shipping_phone || phoneForInput(user.phone_number),
         shipping_city: prev.shipping_city || user.city || '',
       }));
-      if (user.phone_number) {
-        const digits = user.phone_number.replace(/\D/g, '').slice(-9);
-        if (digits.length >= 8) setPhoneForPayment((prev) => prev || digits);
+      // Numéro de paiement : format local « 074 30 16 39 » (et non les 9 derniers chiffres
+      // de +24174301639, qui donnaient « 174301639 »).
+      if (isGabonMobile(user.phone_number)) {
+        setPhoneForPayment((prev) => prev || formatPhoneTyping(user.phone_number));
       }
     }
   }, [authChecked, isAuthenticated, cartItems, user, navigate, retryOrderId]);
@@ -114,9 +121,31 @@ const Checkout = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === 'shipping_phone' ? formatPhoneTyping(value) : value,
     }));
   };
+
+  // Le numéro saisi détermine l'opérateur Mobile Money tant que le client n'a rien choisi
+  useEffect(() => {
+    if (methodTouched) return;
+    const op = detectOperator(phoneForPayment);
+    if (op && toLocalGabon(phoneForPayment).length === 9) setPaymentMethod(op);
+  }, [phoneForPayment, methodTouched]);
+
+  const showError = (message) => {
+    setError(message);
+    // Sur mobile l'erreur peut être hors écran : on la fait défiler jusqu'à elle
+    setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+  };
+
+  // Profil requis par le serveur : nom, prénom, téléphone ; adresse et ville pour un livre papier
+  const missingProfile = user ? [
+    !user.first_name && 'prénom',
+    !user.last_name && 'nom',
+    !user.phone_number && 'téléphone',
+    hasPhysical && !user.address && 'adresse',
+    hasPhysical && !user.city && 'ville',
+  ].filter(Boolean) : [];
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -129,20 +158,25 @@ const Checkout = () => {
   const isBambooPay = paymentMethod === 'bamboopay';
   // Les deux modes Bamboo demandent le numéro du payeur
   const needsPhone = isMobileMoney || isBambooPay;
-  const phoneDigits = normalizeGabonPhone(phoneForPayment);
-  const detectedOperator = phoneDigits.startsWith('06') ? 'moov_money' : phoneDigits.startsWith('07') ? 'airtel_money' : null;
-  const operatorMismatch = isMobileMoney && phoneDigits.length === 9 && detectedOperator && detectedOperator !== paymentMethod;
-  const isPhoneValid = phoneDigits.length === 9 && !operatorMismatch;
-  const canSubmit = !isProcessing && (!needsPhone || isPhoneValid);
+  const phoneDigits = toLocalGabon(phoneForPayment);
+  const detectedOperator = detectOperator(phoneForPayment);
+  const phoneError = validatePhone(phoneForPayment, { required: true, mobileOnly: isMobileMoney });
+  const operatorMismatch = isMobileMoney && !phoneError && detectedOperator && detectedOperator !== paymentMethod;
+  const isPhoneValid = !phoneError && !operatorMismatch;
+  const canSubmit = !isProcessing && missingProfile.length === 0 && (!needsPhone || isPhoneValid);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
+    if (missingProfile.length) {
+      showError(`Votre profil est incomplet : renseignez ${missingProfile.join(', ')} dans « Mon profil ».`);
+      return;
+    }
     if (needsPhone && !isPhoneValid) {
-      setError(operatorMismatch
+      showError(operatorMismatch
         ? `Ce numéro est un numéro ${OPERATOR_NAMES[detectedOperator]} : choisissez ${OPERATOR_NAMES[detectedOperator]} comme mode de paiement.`
-        : 'Veuillez saisir un numéro de téléphone valide (8 ou 9 chiffres).');
+        : phoneError);
       return;
     }
 
@@ -160,9 +194,9 @@ const Checkout = () => {
             quantity: item.quantity,
             format_purchased: item.format_purchased || 'PAPIER',
           })),
-          shipping_address: formData.shipping_address,
-          shipping_phone: formData.shipping_phone,
-          shipping_city: formData.shipping_city,
+          shipping_address: hasPhysical ? formData.shipping_address : '',
+          shipping_phone: hasPhysical ? phoneForApi(formData.shipping_phone) : '',
+          shipping_city: hasPhysical ? formData.shipping_city : '',
           ...(appliedCoupon?.code && { coupon_code: appliedCoupon.code }),
         };
         order = await orderService.createOrder(orderData);
@@ -211,11 +245,7 @@ const Checkout = () => {
             clearCart();
             setSearchParams({ retry: String(order.id) }, { replace: true });
           }
-          setError(
-            payErr.response?.data?.error ||
-              payErr.response?.data?.detail ||
-              'Impossible d\u2019initier le paiement. Veuillez réessayer.'
-          );
+          showError(parseApiError(payErr).message);
         }
       } else {
         if (!retryOrder) {
@@ -228,11 +258,7 @@ const Checkout = () => {
       }
     } catch (err) {
       console.error('Erreur lors de la création de la commande:', err);
-      setError(
-        err.response?.data?.detail ||
-          err.response?.data?.error ||
-          'Une difficulté est survenue lors de la création de la commande'
-      );
+      showError(parseApiError(err).message);
     } finally {
       setIsProcessing(false);
     }
@@ -251,7 +277,9 @@ const Checkout = () => {
           <div className="chk-hero__line" />
           <h1 className="chk-hero__title">Finaliser la commande</h1>
           <p className="chk-hero__sub">
-            Vérifiez vos informations de livraison avant de confirmer.
+            {hasPhysical
+              ? 'Vérifiez vos informations de livraison avant de confirmer.'
+              : 'Vérifiez votre commande avant de confirmer.'}
           </p>
         </div>
       </section>
@@ -270,70 +298,91 @@ const Checkout = () => {
 
         <div className="chk-layout">
         <div className="chk-main">
-          <div className="chk-section">
-            <span className="chk-section__tag">Livraison</span>
-            <h2>Informations de livraison</h2>
-
-            <div className="chk-form-group">
-              <label htmlFor="shipping_address">
-                Adresse complète {hasPhysical && <span className="required">*</span>}
-              </label>
-              <textarea
-                id="shipping_address"
-                name="shipping_address"
-                value={formData.shipping_address}
-                onChange={handleChange}
-                placeholder={hasPhysical ? 'Numéro, Rue, Avenue, Quartier...' : 'Adresse (facultative pour les ebooks)'}
-                required={hasPhysical}
-                rows="3"
-              />
+          {missingProfile.length > 0 && (
+            <div className="chk-section chk-section--warning" role="alert">
+              <span className="chk-section__tag">Profil</span>
+              <h2>Complétez votre profil pour commander</h2>
+              <p className="chk-section__text">
+                Il manque : <strong>{missingProfile.join(', ')}</strong>. Ces informations servent à
+                vous contacter et, pour un livre papier, à vous livrer.
+              </p>
+              <Link to="/profile" state={{ from: '/checkout' }} className="tn-btn tn-btn--primary chk-section__cta">
+                <i className="fas fa-user-pen" /> Compléter mon profil
+              </Link>
             </div>
+          )}
 
-            <div className="chk-form-row">
+          {hasPhysical ? (
+            <div className="chk-section">
+              <span className="chk-section__tag">Livraison</span>
+              <h2>Informations de livraison</h2>
+
               <div className="chk-form-group">
-                <label htmlFor="shipping_city">
-                  Ville {hasPhysical && <span className="required">*</span>}
+                <label htmlFor="shipping_address">
+                  Adresse complète <span className="required">*</span>
                 </label>
-                <input
-                  type="text"
-                  id="shipping_city"
-                  name="shipping_city"
-                  value={formData.shipping_city}
+                <textarea
+                  id="shipping_address"
+                  name="shipping_address"
+                  value={formData.shipping_address}
                   onChange={handleChange}
-                  placeholder={hasPhysical ? 'Ex: Port-Gentil' : 'Ville (facultative pour les ebooks)'}
-                  required={hasPhysical}
+                  placeholder="Quartier, rue, repère…"
+                  autoComplete="street-address"
+                  required
+                  rows="3"
                 />
               </div>
 
-              <div className="chk-form-group">
-                <label htmlFor="shipping_phone">
-                  Numéro de téléphone {hasPhysical && <span className="required">*</span>}
-                </label>
-                <input
-                  type="tel"
-                  id="shipping_phone"
-                  name="shipping_phone"
-                  value={formData.shipping_phone}
-                  onChange={handleChange}
-                  placeholder={hasPhysical ? '+241 XX XX XX XX' : 'Téléphone (facultatif pour les ebooks)'}
-                  required={hasPhysical}
-                />
-              </div>
-            </div>
+              <div className="chk-form-row">
+                <div className="chk-form-group">
+                  <label htmlFor="shipping_city">
+                    Ville <span className="required">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="shipping_city"
+                    name="shipping_city"
+                    value={formData.shipping_city}
+                    onChange={handleChange}
+                    placeholder="Ex. Port-Gentil"
+                    autoComplete="address-level2"
+                    required
+                  />
+                </div>
 
-            {cartItems.some((i) => i.format_purchased === 'PAPIER') && (
+                <div className="chk-form-group">
+                  <label htmlFor="shipping_phone">
+                    Téléphone du destinataire <span className="required">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    id="shipping_phone"
+                    name="shipping_phone"
+                    value={formData.shipping_phone}
+                    onChange={handleChange}
+                    placeholder="074 30 16 39"
+                    inputMode="tel"
+                    autoComplete="tel-national"
+                    required
+                  />
+                </div>
+              </div>
+
               <TnAlert variant="info" style={{ marginTop: 12 }}>
-                Terre Noire Editions livre les exemplaires physiques uniquement a Libreville, Port-Gentil et Lambarene. Si vous residez ailleurs, vous devez venir recuperer votre commande dans l'une de ces trois villes.
+                Terre Noire Éditions livre les livres papier à Libreville, Port-Gentil et Lambaréné.
+                Ailleurs au Gabon, la commande est à retirer dans l&apos;une de ces trois villes.
               </TnAlert>
-            )}
-
-            {error && (
-              <div className="chk-error">
-                <i className="fas fa-exclamation-circle"></i>
-                <span>{error}</span>
-              </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="chk-section">
+              <span className="chk-section__tag">Ebook</span>
+              <h2>Aucune livraison nécessaire</h2>
+              <p className="chk-section__text">
+                Votre commande ne contient que des ebooks{'\u00a0'}: ils seront disponibles dans
+                «{'\u00a0'}Mes commandes{'\u00a0'}» et lisibles en ligne dès la confirmation du paiement.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="chk-sidebar">
@@ -358,12 +407,11 @@ const Checkout = () => {
                 <div className="chk-summary-items">
                   {cartItems.map((item) => (
                     <div key={`${item.id}_${item.format_purchased}`} className="chk-summary-item">
-                      <img
-                        src={item.cover_image || '/images/default-book-cover.jpg'}
-                        alt={item.title}
-                        loading="lazy"
-                        decoding="async"
-                      />
+                      {item.cover_image ? (
+                        <img src={item.cover_image} alt="" loading="lazy" decoding="async" />
+                      ) : (
+                        <span className="chk-summary-item__cover"><TnBookCover book={item} variant="compact" /></span>
+                      )}
                       <div className="chk-item-info">
                         <h4>{item.title}</h4>
                         <p>{item.author?.full_name}</p>
@@ -401,10 +449,12 @@ const Checkout = () => {
                           <span>-{formatPrice(discountAmt)}</span>
                         </div>
                       )}
-                      <div className="chk-total-row">
-                        <span>Livraison {shipping === 0 && <em style={{ color: 'var(--color-success)' }}>Gratuit</em>}</span>
-                        <span>{shipping === 0 ? 'Gratuit' : formatPrice(shipping)}</span>
-                      </div>
+                      {hasPhysical && (
+                        <div className="chk-total-row">
+                          <span>Livraison</span>
+                          <span>{shipping === 0 ? <em style={{ color: 'var(--color-success)', fontStyle: 'normal' }}>Gratuite</em> : formatPrice(shipping)}</span>
+                        </div>
+                      )}
                       <div className="chk-total-row chk-total-row--final">
                         <span>Total</span>
                         <span>{formatPrice(total)}</span>
@@ -421,16 +471,10 @@ const Checkout = () => {
               <h3 className="chk-pay__title">Mode de paiement</h3>
 
               <div className="chk-pay__options">
-                {[
-                  { value: 'moov_money', name: 'Moov Money', desc: 'Paiement mobile instantané', icon: 'fas fa-mobile-alt', iconClass: 'chk-pay__icon--moov', badge: 'Recommandé' },
-                  { value: 'airtel_money', name: 'Airtel Money', desc: 'Paiement mobile instantané', icon: 'fas fa-mobile-alt', iconClass: 'chk-pay__icon--airtel' },
-                  { value: 'bamboopay', name: 'BambooPay', desc: 'Paiement sur la page sécurisée BambooPay', icon: 'fas fa-lock', iconClass: 'chk-pay__icon--bamboopay' },
-                  { value: 'cash', name: 'Espèces à la livraison', desc: 'Paiement en main propre', icon: 'fas fa-money-bill-wave', iconClass: 'chk-pay__icon--cash', disabled: true, badgeSoon: 'Bientôt' },
-                  { value: 'visa', name: 'Carte Visa', desc: 'Paiement par carte bancaire', icon: 'fab fa-cc-visa', iconClass: 'chk-pay__icon--visa', disabled: true, badgeSoon: 'Bientôt' },
-                ].map((opt) => (
+                {PAYMENT_METHODS.map((opt) => (
                   <label
                     key={opt.value}
-                    className={`chk-pay__option${paymentMethod === opt.value ? ' chk-pay__option--selected' : ''}${opt.disabled ? ' chk-pay__option--disabled' : ''}`}
+                    className={`chk-pay__option${paymentMethod === opt.value ? ' chk-pay__option--selected' : ''}`}
                   >
                     <input
                       type="radio"
@@ -438,8 +482,7 @@ const Checkout = () => {
                       value={opt.value}
                       className="chk-pay__radio"
                       checked={paymentMethod === opt.value}
-                      disabled={opt.disabled}
-                      onChange={() => setPaymentMethod(opt.value)}
+                      onChange={() => { setPaymentMethod(opt.value); setMethodTouched(true); }}
                     />
                     <span className="chk-pay__indicator" />
                     <span className={`chk-pay__icon ${opt.iconClass}`}>
@@ -448,8 +491,6 @@ const Checkout = () => {
                     <span className="chk-pay__label">
                       <span className="chk-pay__name">
                         {opt.name}
-                        {opt.badge && <span className="chk-pay__badge">{opt.badge}</span>}
-                        {opt.badgeSoon && <span className="chk-pay__badge chk-pay__badge--soon">{opt.badgeSoon}</span>}
                       </span>
                       <span className="chk-pay__desc">{opt.desc}</span>
                     </span>
@@ -462,23 +503,23 @@ const Checkout = () => {
                   <label className="chk-pay__phone-label" htmlFor="phone_payment">
                     {isBambooPay ? 'Numéro de téléphone' : 'Numéro de téléphone (mobile money)'} <span className="required">*</span>
                   </label>
-                  <div className="chk-pay__phone-wrap">
-                    <span className="chk-pay__phone-prefix">+241</span>
-                    <input
-                      type="tel"
-                      id="phone_payment"
-                      className="chk-pay__phone-input"
-                      placeholder="07 XX XX XX"
-                      maxLength="17"
-                      value={phoneForPayment}
-                      onChange={(e) => setPhoneForPayment(e.target.value.replace(/[^\d\s+]/g, ''))}
-                    />
-                  </div>
-                  <p className={`chk-pay__phone-hint${operatorMismatch ? ' chk-pay__phone-hint--error' : ''}`}>
+                  <input
+                    type="tel"
+                    id="phone_payment"
+                    className="chk-pay__phone-input"
+                    placeholder="074 30 16 39"
+                    inputMode="tel"
+                    autoComplete="tel-national"
+                    maxLength="20"
+                    value={phoneForPayment}
+                    onChange={(e) => setPhoneForPayment(formatPhoneTyping(e.target.value))}
+                    aria-describedby="phone_payment_hint"
+                  />
+                  <p id="phone_payment_hint" className={`chk-pay__phone-hint${operatorMismatch || (phoneDigits.length >= 9 && phoneError) ? ' chk-pay__phone-hint--error' : ''}`}>
                     {operatorMismatch ? (
                       <>
                         Ce numéro est un numéro {OPERATOR_NAMES[detectedOperator]}.{' '}
-                        <button type="button" className="chk-pay__switch" onClick={() => setPaymentMethod(detectedOperator)}>
+                        <button type="button" className="chk-pay__switch" onClick={() => { setPaymentMethod(detectedOperator); setMethodTouched(true); }}>
                           Payer avec {OPERATOR_NAMES[detectedOperator]}
                         </button>
                       </>
@@ -486,13 +527,27 @@ const Checkout = () => {
                       ? (isBambooPay
                         ? 'Vous serez redirigé vers BambooPay pour finaliser le paiement.'
                         : 'Vous recevrez une demande de validation sur ce numéro.')
-                      : phoneForPayment.length > 0
-                        ? 'Le numéro doit comporter 8 ou 9 chiffres.'
-                        : 'Saisissez le numéro associé à votre compte mobile money.'}
+                      : phoneDigits.length >= 9
+                        ? phoneError
+                        : isBambooPay
+                          ? 'Numéro à 9 chiffres, par exemple 074 30 16 39.'
+                          : 'Le numéro de votre compte Mobile Money, par exemple 074 30 16 39.'}
                   </p>
                 </div>
               )}
             </div>
+
+            {error && (
+              <div className="chk-error" role="alert" ref={errorRef}>
+                <i className="fas fa-exclamation-circle" aria-hidden="true" />
+                <span>
+                  {error}
+                  {/profil/i.test(error) && (
+                    <> <Link to="/profile" state={{ from: '/checkout' }}>Compléter mon profil</Link></>
+                  )}
+                </span>
+              </div>
+            )}
 
             <button
               type="submit"
@@ -501,7 +556,8 @@ const Checkout = () => {
             >
               {isProcessing ? (
                 <>
-                  <i className="fas fa-spinner fa-spin" /> Traitement en cours…
+                  <i className="fas fa-spinner fa-spin" />{' '}
+                  {needsPhone && !isBambooPay ? 'Envoi de la demande sur votre téléphone…' : 'Traitement en cours…'}
                 </>
               ) : (
                 <>
@@ -516,16 +572,22 @@ const Checkout = () => {
                 <i className="fas fa-lock" />
                 <span>Paiement sécurisé</span>
               </div>
-              <div className="chk-badge">
-                <i className="fas fa-truck" />
-                <span>Livraison rapide</span>
-              </div>
+              {hasPhysical ? (
+                <div className="chk-badge">
+                  <i className="fas fa-truck" />
+                  <span>Livraison à Libreville, Port-Gentil et Lambaréné</span>
+                </div>
+              ) : (
+                <div className="chk-badge">
+                  <i className="fas fa-book-open-reader" />
+                  <span>Lecture en ligne immédiate</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
         </div>
       </form>
-      <div className="chk-footer-fade" />
     </div>
   );
 };

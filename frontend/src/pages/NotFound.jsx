@@ -27,7 +27,6 @@ const NotFound = () => (
         </div>
       </div>
     </section>
-    <div className="notfound-footer-fade" />
   </div>
 );
 

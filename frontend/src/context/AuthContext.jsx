@@ -1,8 +1,14 @@
 // frontend/src/context/AuthContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI, tokenStorage, handleApiError } from '../services/api';
+import { authAPI, tokenStorage, parseApiError } from '../services/api';
 
 const AuthContext = createContext();
+
+// { error: message lisible, fieldErrors: { champ: message } } pour les formulaires
+const apiErrorResult = (error) => {
+  const { message, fieldErrors } = parseApiError(error);
+  return { error: message, fieldErrors, status: error?.response?.status };
+};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -74,7 +80,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        error: handleApiError(error),
+        ...apiErrorResult(error),
       };
     }
   };
@@ -99,7 +105,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        error: handleApiError(error),
+        ...apiErrorResult(error),
       };
     }
   };
@@ -125,7 +131,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Erreur lors de la mise à jour du profil:', error);
       return {
         success: false,
-        error: handleApiError(error),
+        ...apiErrorResult(error),
       };
     }
   };
@@ -138,7 +144,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Erreur lors du changement de mot de passe:', error);
       return {
         success: false,
-        error: handleApiError(error),
+        ...apiErrorResult(error),
       };
     }
   };

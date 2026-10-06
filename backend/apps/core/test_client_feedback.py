@@ -125,7 +125,7 @@ class CheckStatusRobustnessTests(APITestCase):
     """Point 8 : pas de faux échec juste après l'initiation, pas d'expiration à l'aveugle."""
 
     def setUp(self):
-        self.user = User.objects.create_user(username='buyer', email='b@example.com', password='x', phone_number='+24100000001')
+        self.user = User.objects.create_user(username='buyer', email='b@example.com', password='x', phone_number='+24166000001')
         self.order = Order.objects.create(user=self.user, total_amount=Decimal('5000'), subtotal=Decimal('5000'))
         self.payment = Payment.objects.create(
             order=self.order, transaction_id='TXN-CS-1', provider='AIRTEL', status='PENDING', amount=Decimal('5000'),
@@ -251,7 +251,7 @@ class BambooPayRedirectTests(APITestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            username='buyer9', email='b9@example.com', password='x', phone_number='+24100000009',
+            username='buyer9', email='b9@example.com', password='x', phone_number='+24166000009',
             first_name='Awa', last_name='Ndong',
         )
         self.order = Order.objects.create(user=self.user, total_amount=Decimal('5000.50'), subtotal=Decimal('5000.50'))
@@ -311,7 +311,7 @@ class BambooCallbackTests(APITestCase):
     URL = '/api/payments/webhook/'
 
     def setUp(self):
-        user = User.objects.create_user(username='cb', email='cb@example.com', password='x', phone_number='+24100000010')
+        user = User.objects.create_user(username='cb', email='cb@example.com', password='x', phone_number='+24166000010')
         self.order = Order.objects.create(user=user, total_amount=Decimal('5000'), subtotal=Decimal('5000'))
         self.payment = Payment.objects.create(
             order=self.order, transaction_id='TXN-2025-000381', provider='AIRTEL', status='PENDING',
@@ -362,7 +362,7 @@ class BambooCallbackTests(APITestCase):
 
 class CheckStatusRateLimitTests(APITestCase):
     def test_bamboo_is_not_called_more_than_every_20_seconds(self):
-        user = User.objects.create_user(username='rl', email='rl@example.com', password='x', phone_number='+24100000011')
+        user = User.objects.create_user(username='rl', email='rl@example.com', password='x', phone_number='+24166000011')
         order = Order.objects.create(user=user, total_amount=Decimal('5000'), subtotal=Decimal('5000'))
         Payment.objects.create(order=order, transaction_id='TXN-RL', provider='AIRTEL', status='PENDING', amount=Decimal('5000'))
         self.client.force_authenticate(user)
@@ -423,3 +423,86 @@ class ReplyToTests(TestCase):
             post.return_value.status_code = 201
             BrevoAPIEmailBackend(api_key='k').send_messages([msg])
         self.assertEqual(post.call_args.kwargs['json']['replyTo'], {'email': 'terrenoireeditions@gmail.com'})
+
+
+class PhoneNumberPlanTests(APITestCase):
+    """Numérotation gabonaise : saisie libre, stockage E.164, unicité quel que soit le format."""
+
+    def setUp(self):
+        cache.clear()
+
+    def _register(self, username, phone):
+        return self.client.post('/api/users/register/', {
+            'username': username, 'email': f'{username}@example.com',
+            'password': 'Sup3rSecret!x', 'password_confirm': 'Sup3rSecret!x',
+            'first_name': 'A', 'last_name': 'B', 'phone_number': phone,
+        }, format='json')
+
+    def test_local_format_with_spaces_is_stored_as_e164(self):
+        response = self._register('phone1', '074 30 16 39')
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(User.objects.get(username='phone1').phone_number, '+24174301639')
+
+    def test_same_number_in_another_format_is_rejected(self):
+        self._register('phone2', '+241 74 30 16 39')
+        response = self._register('phone3', '074301639')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('phone_number', response.data)
+
+    def test_legacy_local_duplicate_is_detected(self):
+        User.objects.create_user(username='old', email='old@example.com', password='x', phone_number='074301639')
+        response = self._register('phone4', '+24174301639')
+        self.assertEqual(response.status_code, 400)
+
+    def test_invalid_number_is_explained(self):
+        response = self._register('phone5', '12345')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('9 chiffres', str(response.data['phone_number']))
+
+    def test_foreign_international_number_is_kept(self):
+        response = self._register('phone6', '+33 6 12 34 56 78')
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(User.objects.get(username='phone6').phone_number, '+33612345678')
+
+    def test_profile_update_normalizes(self):
+        user = User.objects.create_user(username='upd', email='upd@example.com', password='x')
+        self.client.force_authenticate(user)
+        response = self.client.patch('/api/users/me/', {'phone_number': '066 12 34 56'}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        user.refresh_from_db()
+        self.assertEqual(user.phone_number, '+24166123456')
+
+
+class EbookOnlyOrderTests(APITestCase):
+    """Une commande 100 % ebook n'exige ni adresse ni ville."""
+
+    def setUp(self):
+        SiteConfig.get_config()
+        cat, _ = Category.objects.get_or_create(slug='roman', defaults={'name': 'Roman'})
+        author = Author.objects.create(full_name='A', slug='a-ebook')
+        self.book = Book.objects.create(
+            title='E', slug='e-only', reference='EB1', description='d', price=Decimal('5000'),
+            available=True, category=cat, author=author, has_ebook=True, ebook_price=Decimal('3000'),
+        )
+
+    def _order(self, user, fmt):
+        self.client.force_authenticate(user)
+        return self.client.post('/api/orders/', {
+            'items': [{'book_id': self.book.id, 'quantity': 1, 'format_purchased': fmt}],
+        }, format='json')
+
+    def test_ebook_order_without_address(self):
+        user = User.objects.create_user(username='eb', email='eb@example.com', password='x',
+                                        first_name='E', last_name='B', phone_number='+24174000001')
+        response = self._order(user, 'EBOOK')
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(Decimal(response.data['shipping_cost']), Decimal('0'))
+
+    def test_paper_order_requires_address_with_clear_message(self):
+        user = User.objects.create_user(username='pp', email='pp@example.com', password='x',
+                                        first_name='P', last_name='P', phone_number='+24174000002')
+        response = self._order(user, 'PAPIER')
+        self.assertEqual(response.status_code, 400)
+        message = str(response.data)
+        self.assertIn('profil est incomplet', message)
+        self.assertIn('adresse', message)

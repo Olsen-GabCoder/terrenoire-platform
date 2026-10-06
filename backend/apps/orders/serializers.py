@@ -9,6 +9,8 @@ from django.db.models import F
 from django.utils import timezone
 from decimal import Decimal
 
+from apps.users.phone import normalize_phone
+
 
 class OrderItemSerializer(serializers.ModelSerializer):
     book = BookListSerializer(read_only=True)
@@ -49,7 +51,7 @@ class OrderCreateSerializer(serializers.Serializer):
         for item in value:
             if item.get('format_purchased') == 'EBOOK' and item['quantity'] > 1:
                 raise serializers.ValidationError(
-                    "Un ebook ne peut etre commande qu'en un seul exemplaire."
+                    "Un ebook ne peut être commandé qu'en un seul exemplaire."
                 )
 
         # Verifier que le livre propose bien l'ebook si demande
@@ -68,40 +70,40 @@ class OrderCreateSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         user = self.context['request'].user
-        if not user.has_complete_profile:
-            missing = []
-            if not user.first_name:
-                missing.append('prenom')
-            if not user.last_name:
-                missing.append('nom')
-            if not user.phone_number:
-                missing.append('telephone')
-            if not user.address:
-                missing.append('adresse')
-            if not user.city:
-                missing.append('ville')
-            raise serializers.ValidationError(
-                f"Veuillez completer votre profil avant de commander. "
-                f"Champs manquants : {', '.join(missing)}."
-            )
-
-        # Verifier si la commande contient des livres papier
         items = attrs.get('items', [])
         has_physical = any(item.get('format_purchased', 'PAPIER') == 'PAPIER' for item in items)
+
+        # Profil : nom, prénom et téléphone toujours ; adresse et ville seulement
+        # si un livre papier doit être livré (un ebook se lit en ligne).
+        required = [('first_name', 'prénom'), ('last_name', 'nom'), ('phone_number', 'téléphone')]
+        if has_physical:
+            required += [('address', 'adresse'), ('city', 'ville')]
+        missing = [label for field, label in required if not (getattr(user, field, '') or '').strip()]
+        if missing:
+            raise serializers.ValidationError(
+                "Votre profil est incomplet. Renseignez dans « Mon profil » : "
+                f"{', '.join(missing)}."
+            )
 
         if has_physical:
             if not attrs.get('shipping_address', '').strip():
                 raise serializers.ValidationError({
-                    'shipping_address': "L'adresse est requise pour une commande avec livre papier."
+                    'shipping_address': "L'adresse de livraison est requise pour un livre papier."
                 })
             if not attrs.get('shipping_city', '').strip():
                 raise serializers.ValidationError({
-                    'shipping_city': 'La ville est requise pour une commande avec livre papier.'
+                    'shipping_city': 'La ville de livraison est requise pour un livre papier.'
                 })
             if not attrs.get('shipping_phone', '').strip():
                 raise serializers.ValidationError({
-                    'shipping_phone': 'Le téléphone est requis pour une commande avec livre papier.'
+                    'shipping_phone': 'Le téléphone de livraison est requis pour un livre papier.'
                 })
+
+        if attrs.get('shipping_phone', '').strip():
+            try:
+                attrs['shipping_phone'] = normalize_phone(attrs['shipping_phone']) or ''
+            except ValueError as e:
+                raise serializers.ValidationError({'shipping_phone': str(e)})
 
         return attrs
 
@@ -118,9 +120,9 @@ class OrderCreateSerializer(serializers.Serializer):
         for item_data in items_data:
             book = books_map.get(item_data['book_id'])
             if not book:
-                raise serializers.ValidationError(f"Livre id={item_data['book_id']} introuvable.")
+                raise serializers.ValidationError("Un des livres de votre panier n'existe plus. Retirez-le puis réessayez.")
             if not book.available:
-                raise serializers.ValidationError(f"Le livre '{book.title}' n'est plus disponible.")
+                raise serializers.ValidationError(f"Le livre « {book.title} » n'est plus disponible. Retirez-le de votre panier.")
 
             fmt = item_data.get('format_purchased', 'PAPIER')
             quantity = item_data['quantity']

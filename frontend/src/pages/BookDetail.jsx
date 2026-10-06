@@ -13,6 +13,7 @@ import TnAlert from '../components/ui/TnAlert';
 import useParallax from '../hooks/useParallax';
 import SectionSeparator from '../components/SectionSeparator';
 import '../styles/BookDetail.css';
+import TnBookCover from '../components/ui/TnBookCover';
 
 const BookDetail = () => {
   const { id } = useParams();
@@ -335,11 +336,11 @@ const BookDetail = () => {
                   <i className={`${isInWishlist(book.id) ? 'fas' : 'far'} fa-heart`} />
                   <span>{isInWishlist(book.id) ? 'Dans la liste' : 'Liste d\'envie'}</span>
                 </button>
-                <img
-                  src={book.cover_image || '/images/default-book-cover.jpg'}
-                  alt={book.title}
-                  loading="lazy"
-                />
+                {book.cover_image ? (
+                  <img src={book.cover_image} alt={book.title} loading="lazy" />
+                ) : (
+                  <div className="bd-cover-fallback"><TnBookCover book={book} style={{ paddingBottom: 52 }} /></div>
+                )}
                 {book.has_discount && (
                   <span className="bd-image-badge bd-image-badge--promo">
                     −{book.discount_percentage}%
@@ -404,15 +405,14 @@ const BookDetail = () => {
                     <span className="bd-price-old">{formatPrice(book.original_price)}</span>
                   )}
                   <span className="bd-price">{formatPrice(book.price)}</span>
-                  <span className="bd-price-vat">Papier</span>
-                  {book.has_ebook && book.ebook_price && (
-                    <>
-                      <span style={{ color: 'var(--tn-gray-400)', margin: '0 6px' }}>|</span>
-                      <span className="bd-price" style={{ fontSize: '0.85em' }}>{formatPrice(book.ebook_price)}</span>
-                      <span className="bd-price-vat">Ebook</span>
-                    </>
-                  )}
+                  <span className="bd-price-vat">livre papier</span>
                 </div>
+                {book.has_ebook && book.ebook_price && (
+                  <div className="bd-price-row bd-price-row--ebook">
+                    <span className="bd-price bd-price--ebook">{formatPrice(book.ebook_price)}</span>
+                    <span className="bd-price-vat">ebook · lecture en ligne</span>
+                  </div>
+                )}
                 <div className="bd-availability">
                   {book.available ? (
                     <span className="bd-availability--ok">
@@ -429,35 +429,36 @@ const BookDetail = () => {
               {book.excerpt_pdf_url && (
                 <div className="bd-read-action">
                   <Link to={`/books/${id}/excerpt-read`} className="bd-btn bd-btn--outline">
-                    <i className="fas fa-file-pdf" /> Lire un extrait
+                    <i className="fas fa-book-open-reader" /> Lire un extrait
                   </Link>
                 </div>
               )}
 
               {book.available && (
                 <div className="bd-actions">
-                  <div className="bd-quantity">
-                    <button
-                      type="button"
-                      className="bd-quantity__btn"
-                      onClick={() => handleQuantityChange(-1)}
-                      disabled={quantity <= 1}
-                      aria-label="Diminuer la quantité"
-                    >
-                      −
-                    </button>
-                    <span className="bd-quantity__val">{quantity}</span>
-                    <button
-                      type="button"
-                      className="bd-quantity__btn"
-                      onClick={() => handleQuantityChange(1)}
-                      disabled={quantity >= 10}
-                      aria-label="Augmenter la quantité"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <div className="bd-action-btns">
+                  {/* Papier : quantité + bouton sur la même ligne */}
+                  <div className="bd-buy-row">
+                    <div className="bd-quantity" role="group" aria-label="Quantité (livre papier)">
+                      <button
+                        type="button"
+                        className="bd-quantity__btn"
+                        onClick={() => handleQuantityChange(-1)}
+                        disabled={quantity <= 1 || isInCart(book.id, 'PAPIER')}
+                        aria-label="Diminuer la quantité"
+                      >
+                        −
+                      </button>
+                      <span className="bd-quantity__val" aria-live="polite">{quantity}</span>
+                      <button
+                        type="button"
+                        className="bd-quantity__btn"
+                        onClick={() => handleQuantityChange(1)}
+                        disabled={quantity >= 10 || isInCart(book.id, 'PAPIER')}
+                        aria-label="Augmenter la quantité"
+                      >
+                        +
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={handleAddPaper}
@@ -465,31 +466,38 @@ const BookDetail = () => {
                       disabled={isInCart(book.id, 'PAPIER')}
                     >
                       {isInCart(book.id, 'PAPIER') ? (
-                        <><i className="fas fa-check" /> Papier dans le panier</>
+                        <><i className="fas fa-check" /> Dans le panier</>
                       ) : (
-                        <><i className="fas fa-shopping-cart" /> Ajouter Papier — {formatPrice(book.price)}</>
+                        <><i className="fas fa-bag-shopping" /> Ajouter au panier</>
                       )}
                     </button>
-                    {book.has_ebook && book.ebook_price && (
-                      <button
-                        type="button"
-                        onClick={handleAddEbook}
-                        className={`bd-btn bd-btn--cart ${isInCart(book.id, 'EBOOK') ? 'bd-btn--in-cart' : ''}`}
-                        disabled={isInCart(book.id, 'EBOOK')}
-                      >
-                        {isInCart(book.id, 'EBOOK') ? (
-                          <><i className="fas fa-check" /> Ebook dans le panier</>
-                        ) : (
-                          <><i className="fas fa-file-pdf" /> Ajouter Ebook — {formatPrice(book.ebook_price)}</>
-                        )}
-                      </button>
-                    )}
                   </div>
+
+                  {book.has_ebook && book.ebook_price && (
+                    <button
+                      type="button"
+                      onClick={handleAddEbook}
+                      className={`bd-btn bd-btn--ebook ${isInCart(book.id, 'EBOOK') ? 'bd-btn--in-cart' : ''}`}
+                      disabled={isInCart(book.id, 'EBOOK')}
+                    >
+                      {isInCart(book.id, 'EBOOK') ? (
+                        <><i className="fas fa-check" /> Ebook dans le panier</>
+                      ) : (
+                        <><i className="fas fa-tablet-screen-button" /> Ajouter l&apos;ebook — {formatPrice(book.ebook_price)}</>
+                      )}
+                    </button>
+                  )}
+
+                  {(isInCart(book.id, 'PAPIER') || isInCart(book.id, 'EBOOK')) && (
+                    <Link to="/cart" className="bd-cart-link">
+                      Voir mon panier <i className="fas fa-arrow-right" aria-hidden="true" />
+                    </Link>
+                  )}
                 </div>
               )}
 
               <TnAlert variant="info" style={{ marginTop: 16 }}>
-                Livraison physique disponible a Libreville, Port-Gentil et Lambarene uniquement. Hors de ces villes, retrait en main propre dans l'une d'entre elles.
+                Livraison des livres papier à Libreville, Port-Gentil et Lambaréné. Ailleurs au Gabon, retrait en main propre dans l'une de ces villes.
               </TnAlert>
             </div>
           </div>
@@ -958,7 +966,6 @@ const BookDetail = () => {
           )}
         </div>
       </div>
-      <div className="bd-footer-fade" />
     </div>
   );
 };

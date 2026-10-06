@@ -1,10 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import TnInput from '../components/ui/TnInput';
 import '../styles/Settings.css';
 
+const EMPTY_PASSWORDS = { old_password: '', new_password: '', new_password_confirm: '' };
+
 const Settings = () => {
-  const { user, authChecked, updateProfile } = useAuth();
+  const { user, authChecked, updateProfile, changePassword } = useAuth();
+  const [passwords, setPasswords] = useState(EMPTY_PASSWORDS);
+  const [pwErrors, setPwErrors] = useState({});
+  const [pwMessage, setPwMessage] = useState({ type: '', text: '' });
+  const [pwLoading, setPwLoading] = useState(false);
   const navigate = useNavigate();
   const [receiveNewsletter, setReceiveNewsletter] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -40,6 +47,36 @@ const Settings = () => {
     }
   };
 
+  const handlePasswordInput = (e) => {
+    const { name, value } = e.target;
+    setPasswords((p) => ({ ...p, [name]: value }));
+    if (pwErrors[name]) setPwErrors((p) => ({ ...p, [name]: '' }));
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setPwMessage({ type: '', text: '' });
+    const errors = {};
+    if (!passwords.old_password) errors.old_password = 'Saisissez votre mot de passe actuel.';
+    if (passwords.new_password.length < 8) errors.new_password = '8 caractères minimum.';
+    if (passwords.new_password !== passwords.new_password_confirm) {
+      errors.new_password_confirm = 'Les deux mots de passe ne correspondent pas.';
+    }
+    setPwErrors(errors);
+    if (Object.keys(errors).length) return;
+
+    setPwLoading(true);
+    const result = await changePassword(passwords);
+    setPwLoading(false);
+    if (result.success) {
+      setPasswords(EMPTY_PASSWORDS);
+      setPwMessage({ type: 'success', text: 'Mot de passe modifié. Un e-mail de confirmation vous a été envoyé.' });
+    } else {
+      setPwErrors(result.fieldErrors || {});
+      setPwMessage({ type: 'error', text: result.error || 'La modification a échoué.' });
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -69,6 +106,7 @@ const Settings = () => {
             <label className="settings-toggle">
               <input
                 type="checkbox"
+                aria-label="Recevoir la newsletter"
                 checked={receiveNewsletter}
                 onChange={handleNewsletterChange}
                 disabled={loading}
@@ -77,7 +115,7 @@ const Settings = () => {
             </label>
           </div>
           {message.text && (
-            <p className={`settings-msg settings-msg--${message.type}`}>
+            <p className={`settings-msg settings-msg--${message.type}`} role="status">
               <i className={`fas fa-${message.type === 'success' ? 'check-circle' : 'exclamation-circle'}`} />
               {message.text}
             </p>
@@ -93,11 +131,57 @@ const Settings = () => {
         </div>
 
         <div className="settings-card">
-          <h2><i className="fas fa-shield-alt" /> Sécurité</h2>
-          <p>Pour modifier votre mot de passe ou sécuriser votre compte, contactez-nous à terrenoireeditions@gmail.com.</p>
+          <h2><i className="fas fa-shield-alt" /> Changer de mot de passe</h2>
+          <form onSubmit={handlePasswordSubmit} className="settings-password" noValidate>
+            <TnInput
+              label="Mot de passe actuel"
+              type="password"
+              name="old_password"
+              value={passwords.old_password}
+              onChange={handlePasswordInput}
+              autoComplete="current-password"
+              showToggle
+              required
+              error={pwErrors.old_password}
+            />
+            <TnInput
+              label="Nouveau mot de passe"
+              type="password"
+              name="new_password"
+              value={passwords.new_password}
+              onChange={handlePasswordInput}
+              autoComplete="new-password"
+              showToggle
+              required
+              helper="8 caractères minimum"
+              error={pwErrors.new_password}
+            />
+            <TnInput
+              label="Confirmer le nouveau mot de passe"
+              type="password"
+              name="new_password_confirm"
+              value={passwords.new_password_confirm}
+              onChange={handlePasswordInput}
+              autoComplete="new-password"
+              showToggle
+              required
+              error={pwErrors.new_password_confirm}
+            />
+            {pwMessage.text && (
+              <p className={`settings-msg settings-msg--${pwMessage.type}`} role="alert">
+                <i className={`fas fa-${pwMessage.type === 'success' ? 'check-circle' : 'exclamation-circle'}`} />
+                {pwMessage.text}
+              </p>
+            )}
+            <button type="submit" className="settings-btn settings-btn--primary" disabled={pwLoading}>
+              {pwLoading ? <><i className="fas fa-spinner fa-spin" /> Enregistrement…</> : <><i className="fas fa-key" /> Modifier le mot de passe</>}
+            </button>
+          </form>
+          <p className="settings-note">
+            Mot de passe oublié ? <Link to="/forgot-password">Recevoir un lien de réinitialisation</Link>
+          </p>
         </div>
       </div>
-      <div className="settings-footer-fade" />
     </div>
   );
 };

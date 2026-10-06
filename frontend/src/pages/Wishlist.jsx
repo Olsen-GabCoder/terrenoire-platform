@@ -36,7 +36,6 @@ const Wishlist = () => {
             </div>
           </div>
         </div>
-        <div className="wishlist-footer-fade" />
       </div>
     );
   }
@@ -89,7 +88,6 @@ const Wishlist = () => {
           ))}
         </div>
       </div>
-      <div className="wishlist-footer-fade" />
     </div>
   );
 };

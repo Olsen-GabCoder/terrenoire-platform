@@ -2,42 +2,72 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import orderService from '../services/orderService';
 import TnAlert from '../components/ui/TnAlert';
+import { formatPhoneDisplay } from '../utils/phone';
 import '../styles/OrderSuccess.css';
+
+const PAID_STATUSES = ['PAID', 'SHIPPED'];
+
+const formatPrice = (price) => new Intl.NumberFormat('fr-FR', {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+}).format(price) + '\u00a0FCFA';
 
 const OrderSuccess = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { orderId, orderData } = location.state || {};
+  const { orderId, orderData: stateOrder } = location.state || {};
+  // Après un paiement Mobile Money, seule l'identifiant de commande est transmis :
+  // on recharge la commande pour afficher les vrais montants (et non « 0 FCFA »).
+  const [order, setOrder] = useState(stateOrder || null);
   const [downloading, setDownloading] = useState(false);
+  const [invoiceError, setInvoiceError] = useState('');
 
   useEffect(() => {
     if (!orderId) {
       navigate('/catalog');
+      return;
     }
+    let cancelled = false;
+    orderService.getOrderById(orderId)
+      .then((data) => { if (!cancelled) setOrder(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, [orderId, navigate]);
 
   if (!orderId) {
     return null;
   }
 
+  const items = order?.items || [];
+  const hasPhysical = items.some((i) => (i.format_purchased || 'PAPIER') === 'PAPIER');
+  const ebookItems = items.filter((i) => i.format_purchased === 'EBOOK');
+  const isPaid = PAID_STATUSES.includes(order?.status);
+
   const handleDownloadInvoice = async () => {
-    if (!orderId) return;
     setDownloading(true);
+    setInvoiceError('');
     try {
       await orderService.downloadInvoice(orderId);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setInvoiceError('La facture n\'a pas pu être téléchargée. Réessayez depuis « Mes commandes ».');
     } finally {
       setDownloading(false);
     }
   };
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price) + ' FCFA';
-  };
+  const rows = [
+    ['Commande', `#${orderId}`],
+    order?.subtotal != null && ['Sous-total', formatPrice(order.subtotal)],
+    hasPhysical && order?.shipping_cost != null && [
+      'Livraison', Number(order.shipping_cost) === 0 ? 'Gratuite' : formatPrice(order.shipping_cost),
+    ],
+    Number(order?.discount_amount) > 0 && ['Réduction', `− ${formatPrice(order.discount_amount)}`],
+    order?.total_amount != null && ['Montant total', formatPrice(order.total_amount), true],
+    hasPhysical && order?.shipping_address && [
+      'Livraison à', `${order.shipping_address}${order.shipping_city ? `, ${order.shipping_city}` : ''}`,
+    ],
+    hasPhysical && order?.shipping_phone && ['Téléphone', formatPhoneDisplay(order.shipping_phone)],
+  ].filter(Boolean);
 
   return (
     <div className="os-page">
@@ -49,9 +79,11 @@ const OrderSuccess = () => {
             <i className="fas fa-check-circle" />
           </div>
           <div className="os-hero__line" />
-          <h1 className="os-hero__title">Votre commande a trouvé son chemin</h1>
+          <h1 className="os-hero__title">Merci pour votre commande</h1>
           <p className="os-hero__sub">
-            Merci pour votre confiance. Votre besace s&apos;apprête à recevoir ses compagnons — nous préparons votre commande <strong>#{orderId}</strong> avec soin.
+            {isPaid
+              ? <>Votre paiement est confirmé. Commande <strong>#{orderId}</strong>.</>
+              : <>Votre commande <strong>#{orderId}</strong> est enregistrée.</>}
           </p>
         </div>
       </section>
@@ -60,131 +92,88 @@ const OrderSuccess = () => {
       <div className="os-content">
         <div className="os-card">
 
-        <p className="os-intro">Voici le détail de votre commande, conservé dans nos archives.</p>
-
         <div className="os-info">
-          <div className="os-info-row">
-            <span className="os-info-label">📦 Numéro de commande :</span>
-            <span className="os-info-value">#{orderId}</span>
-          </div>
-          {orderData?.subtotal != null && (
-            <div className="os-info-row">
-              <span className="os-info-label">Sous-total :</span>
-              <span className="os-info-value">{formatPrice(orderData.subtotal)}</span>
+          {rows.map(([label, value, strong]) => (
+            <div className="os-info-row" key={label}>
+              <span className="os-info-label">{label}</span>
+              <span className={`os-info-value${strong ? ' os-info-value--total' : ''}`}>{value}</span>
             </div>
-          )}
-          {orderData?.shipping_cost != null && (
-            <div className="os-info-row">
-              <span className="os-info-label">Livraison :</span>
-              <span className="os-info-value">{Number(orderData.shipping_cost) === 0 ? 'Gratuit' : formatPrice(orderData.shipping_cost)}</span>
-            </div>
-          )}
-          <div className="os-info-row">
-            <span className="os-info-label">💰 Montant total :</span>
-            <span className="os-info-value">{formatPrice(orderData?.total_amount || 0)}</span>
-          </div>
-          <div className="os-info-row">
-            <span className="os-info-label">📍 Adresse de livraison :</span>
-            <span className="os-info-value">{orderData?.shipping_address}</span>
-          </div>
-          <div className="os-info-row">
-            <span className="os-info-label">📱 Téléphone :</span>
-            <span className="os-info-value">{orderData?.shipping_phone}</span>
-          </div>
-          <div className="os-info-row">
-            <span className="os-info-label">🏙️ Ville :</span>
-            <span className="os-info-value">{orderData?.shipping_city}</span>
-          </div>
+          ))}
         </div>
 
-        {orderData?.items?.some((i) => (i.format_purchased || 'PAPIER') === 'PAPIER') && (
-          <TnAlert variant="info" style={{ marginBottom: 20 }}>
-            Terre Noire Editions livre les exemplaires physiques uniquement a Libreville, Port-Gentil et Lambarene. Si vous residez ailleurs, vous devrez venir recuperer votre commande dans l'une de ces trois villes.
+        {ebookItems.length > 0 && isPaid && (
+          <TnAlert variant="success" style={{ marginBottom: 20 }}>
+            <strong>{ebookItems.length > 1 ? 'Vos ebooks sont prêts.' : 'Votre ebook est prêt.'}</strong>{' '}
+            Vous pouvez {ebookItems.length > 1 ? 'les' : 'le'} lire dès maintenant.
+            <div style={{ marginTop: 10 }}>
+              <Link
+                to={ebookItems.length === 1 ? `/books/${ebookItems[0].book.id}/read` : '/orders'}
+                className="os-btn os-btn--read"
+              >
+                <i className="fas fa-book-open-reader" /> {ebookItems.length > 1 ? 'Lire mes ebooks' : 'Lire mon ebook'}
+              </Link>
+            </div>
           </TnAlert>
         )}
-
-        {(() => {
-          const ebookItems = (orderData?.items || []).filter((i) => i.format_purchased === 'EBOOK');
-          if (ebookItems.length === 0) return null;
-          return (
-            <TnAlert variant="success" style={{ marginBottom: 20 }}>
-              <strong>Vos ebooks sont prêts !</strong> Vous pouvez les lire dès maintenant.
-              <div style={{ marginTop: 10 }}>
-                {ebookItems.length === 1 ? (
-                  <Link to={`/books/${ebookItems[0].book.id}/read`} className="os-btn os-btn--read">
-                    <i className="fas fa-book-reader" /> Lire mon ebook
-                  </Link>
-                ) : (
-                  <Link to="/orders" className="os-btn os-btn--read">
-                    <i className="fas fa-book-reader" /> Lire mes ebooks
-                  </Link>
-                )}
-              </div>
-            </TnAlert>
-          );
-        })()}
 
         <div className="os-steps">
           <h2><i className="fas fa-list-check" /> Et maintenant ?</h2>
           <ol>
             <li>
-              <strong>Nous préparons votre commande</strong> — votre paiement (Moov Money, Airtel Money ou BambooPay) est confirmé par e-mail
+              <strong>Confirmation par e-mail</strong> — le récapitulatif de votre commande vous est envoyé.
             </li>
-            <li>
-              <strong>Votre commande prend la route</strong> — une fois le paiement confirmé, nous expédions sous 5 à 10 jours ouvrés
-            </li>
-            <li>
-              <strong>Vos livres rejoignent votre bibliothèque</strong> — livraison à l&apos;adresse indiquée
-            </li>
+            {hasPhysical ? (
+              <>
+                <li>
+                  <strong>Préparation et livraison</strong> — à Libreville, Port-Gentil ou Lambaréné ;
+                  ailleurs au Gabon, retrait dans l&apos;une de ces villes.
+                </li>
+                <li>
+                  <strong>Suivi</strong> — l&apos;état de votre commande est visible dans « Mes commandes ».
+                </li>
+              </>
+            ) : (
+              <li>
+                <strong>Lecture en ligne</strong> — vos ebooks restent disponibles à tout moment dans « Mes commandes ».
+              </li>
+            )}
           </ol>
         </div>
 
-        <div className="os-payment">
-          <h3><i className="fas fa-credit-card" /> Moyens de paiement acceptés</h3>
-          <div className="os-payment-icons">
-            <span><i className="fas fa-mobile-alt" /> Moov Money</span>
-            <span><i className="fas fa-mobile-alt" /> Airtel Money</span>
-            <span><i className="fas fa-lock" /> BambooPay</span>
-          </div>
-        </div>
-
-        <blockquote className="os-quote">
-          « Un livre offert ou choisi est un voyage qui commence. »
-          <cite>— Terre Noire Éditions</cite>
-        </blockquote>
-
         <div className="os-actions">
-          <Link to="/catalog" className="os-btn os-btn--primary">
-            <i className="fas fa-book" /> Découvrir d&apos;autres ouvrages
-          </Link>
           <Link to="/orders" className="os-btn os-btn--primary">
             <i className="fas fa-list" /> Voir mes commandes
           </Link>
-          <button
-            type="button"
-            className="os-btn os-btn--outline"
-            onClick={handleDownloadInvoice}
-            disabled={downloading}
-          >
-            {downloading ? (
-              <><i className="fas fa-spinner fa-spin" /> Téléchargement…</>
-            ) : (
-              <><i className="fas fa-file-pdf" /> Télécharger la facture</>
-            )}
-          </button>
+          <Link to="/catalog" className="os-btn os-btn--outline">
+            <i className="fas fa-book" /> Continuer mes découvertes
+          </Link>
+          {isPaid && (
+            <button
+              type="button"
+              className="os-btn os-btn--outline"
+              onClick={handleDownloadInvoice}
+              disabled={downloading}
+            >
+              {downloading ? (
+                <><i className="fas fa-spinner fa-spin" /> Téléchargement…</>
+              ) : (
+                <><i className="fas fa-file-invoice" /> Télécharger la facture</>
+              )}
+            </button>
+          )}
         </div>
+        {invoiceError && <p className="os-invoice-error" role="alert">{invoiceError}</p>}
 
         <div className="os-support">
           <p>
             <i className="fas fa-headset"></i>
-            Une question ? Appelez notre service client au{' '}
+            Une question ? Appelez-nous au{' '}
             <a href="tel:+24165348887">+241 65 34 88 87</a> ou écrivez-nous sur{' '}
             <a href="https://wa.me/24176593535" target="_blank" rel="noopener noreferrer">WhatsApp (+241 76 59 35 35)</a>
           </p>
         </div>
         </div>
       </div>
-      <div className="os-footer-fade" />
     </div>
   );
 };

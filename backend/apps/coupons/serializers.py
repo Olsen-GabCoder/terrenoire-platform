@@ -52,5 +52,5 @@ class CouponSerializer(serializers.ModelSerializer):
         discount_type = attrs.get('discount_type', getattr(self.instance, 'discount_type', 'percent'))
         discount_value = attrs.get('discount_value', getattr(self.instance, 'discount_value', 0))
         if discount_type == 'percent' and discount_value is not None and discount_value > 100:
-            raise serializers.ValidationError({'discount_value': 'Un pourcentage ne peut pas depasser 100.'})
+            raise serializers.ValidationError({'discount_value': 'Un pourcentage ne peut pas dépasser 100.'})
         return attrs
