@@ -271,6 +271,9 @@ LOGO_URL = os.getenv('LOGO_URL') or f"{os.getenv('FRONTEND_URL', 'http://localho
 # Gmail exige que l'expéditeur = compte SMTP. Si non défini, on utilise EMAIL_HOST_USER.
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL') or os.getenv('EMAIL_HOST_USER') or 'noreply@terrenoireeditions.com'
 ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'terrenoireeditions@gmail.com')
+# Adresse qui reçoit les réponses des clients : l'expéditeur (contact@terrenoireeditions.com)
+# n'a pas de boîte de réception, les réponses sont donc dirigées ici (en-tête Reply-To).
+EMAIL_REPLY_TO = os.getenv('EMAIL_REPLY_TO', 'terrenoireeditions@gmail.com').strip()
 
 # Envoi des e-mails, par ordre de priorité :
 # 1. API HTTP Brevo si BREVO_API_KEY est défini (recommandé : Render bloque le SMTP sur les offres gratuites)

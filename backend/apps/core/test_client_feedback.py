@@ -396,3 +396,30 @@ class BambooServiceRedirectTests(TestCase):
             'phone': '074000000', 'return_url': 'https://site/checkout/paiement/TN-1-abcd',
             'update_status_url': 'https://api.example.com/api/payments/webhook/?token=s3cret',
         })
+
+
+@override_settings(EMAIL_REPLY_TO='terrenoireeditions@gmail.com', ADMIN_EMAIL='editions@example.com')
+class ReplyToTests(TestCase):
+    """Les réponses des clients arrivent dans une vraie boîte (l'expéditeur n'en a pas)."""
+
+    def test_customer_emails_reply_to_gmail(self):
+        from apps.core.email import send_templated_email
+        send_templated_email('Sujet', 'registration_welcome', {'user': None, 'frontend_url': ''}, ['a@example.com'])
+        self.assertEqual(mail.outbox[-1].reply_to, ['terrenoireeditions@gmail.com'])
+
+    def test_manuscript_admin_notice_replies_to_author(self):
+        Manuscript.objects.create(
+            title='T', author_name='Awa', email='awa@example.com', phone_number='074000000',
+            description='d', terms_accepted=True,
+            file=SimpleUploadedFile('m.pdf', b'%PDF', content_type='application/pdf'),
+        )
+        admin_mail = next(m for m in mail.outbox if m.to == ['editions@example.com'])
+        self.assertEqual(admin_mail.reply_to, ['awa@example.com'])
+
+    def test_brevo_uses_default_reply_to_for_plain_send_mail(self):
+        from apps.core.email_backends import BrevoAPIEmailBackend
+        msg = EmailMultiAlternatives('Sujet', 'texte', 'contact@terrenoireeditions.com', ['a@example.com'])
+        with mock.patch('apps.core.email_backends.requests.post') as post:
+            post.return_value.status_code = 201
+            BrevoAPIEmailBackend(api_key='k').send_messages([msg])
+        self.assertEqual(post.call_args.kwargs['json']['replyTo'], {'email': 'terrenoireeditions@gmail.com'})

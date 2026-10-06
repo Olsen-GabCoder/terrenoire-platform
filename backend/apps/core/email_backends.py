@@ -61,8 +61,9 @@ class BrevoAPIEmailBackend(BaseEmailBackend):
             payload['cc'] = [_contact(a) for a in message.cc]
         if message.bcc:
             payload['bcc'] = [_contact(a) for a in message.bcc]
-        if message.reply_to:
-            payload['replyTo'] = _contact(message.reply_to[0])
+        reply_to = message.reply_to[0] if message.reply_to else getattr(settings, 'EMAIL_REPLY_TO', '')
+        if reply_to:
+            payload['replyTo'] = _contact(reply_to)
         for content, mimetype in getattr(message, 'alternatives', []) or []:
             if mimetype == 'text/html':
                 payload['htmlContent'] = content

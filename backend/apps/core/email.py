@@ -49,11 +49,13 @@ def _send_message(msg, subject, to_emails, fail_silently):
         return False
 
 
-def send_templated_email(subject, template_name, context, to_emails, attachments=None, fail_silently=True):
+def send_templated_email(subject, template_name, context, to_emails, attachments=None, fail_silently=True,
+                         reply_to=None):
     """
     Envoie un email à partir d'un template HTML.
     Génère aussi une version texte pour les clients qui ne supportent pas le HTML.
     attachments: liste de tuples (filename, content, mimetype) ou (filename, content)
+    reply_to: adresse de réponse ; par défaut settings.EMAIL_REPLY_TO
 
     Si settings.EMAIL_ASYNC est actif (et fail_silently=True), le message est
     préparé immédiatement puis envoyé dans un thread : la requête de
@@ -78,6 +80,7 @@ def send_templated_email(subject, template_name, context, to_emails, attachments
             body=text_content,
             from_email=settings.DEFAULT_FROM_EMAIL,
             to=to_emails,
+            reply_to=[a for a in [reply_to or getattr(settings, 'EMAIL_REPLY_TO', '')] if a],
         )
         msg.attach_alternative(html_content, 'text/html')
         if attachments:
@@ -301,7 +304,8 @@ def send_contact_notification(contact_message):
     # Email à l'admin
     admin_subject = f"[Contact] {contact_message.subject} — {contact_message.name}"
     send_templated_email(
-        admin_subject, 'contact_admin', context, [settings.ADMIN_EMAIL]
+        admin_subject, 'contact_admin', context, [settings.ADMIN_EMAIL],
+        reply_to=contact_message.email,  # « Répondre » écrit directement au visiteur
     )
     # Accusé de réception au client
     client_subject = "Nous avons bien reçu votre message — Terre Noire Éditions"
@@ -455,4 +459,7 @@ def send_manuscript_admin_notification(manuscript):
         'frontend_url': settings.FRONTEND_URL,
     }
     subject = "Nouveau manuscrit reçu — Terre Noire Éditions"
-    return send_templated_email(subject, 'manuscript_admin', context, [admin_email])
+    return send_templated_email(
+        subject, 'manuscript_admin', context, [admin_email],
+        reply_to=manuscript.email,  # « Répondre » écrit directement à l'auteur
+    )
