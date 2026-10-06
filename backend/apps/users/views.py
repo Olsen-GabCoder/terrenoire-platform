@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -20,6 +22,8 @@ from .serializers import (
 )
 from .token_serializers import EmailTokenObtainPairSerializer
 from .password_reset_serializers import ForgotPasswordSerializer, ResetPasswordSerializer
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -226,6 +230,7 @@ class ForgotPasswordView(APIView):
                     fail_silently=False,
                 )
             except Exception:
+                logger.exception("password_reset.email_failed user=%s", user.pk)
                 return Response(
                     {'message': "Impossible d'envoyer l'email. Réessayez plus tard."},
                     status=status.HTTP_503_SERVICE_UNAVAILABLE

@@ -411,6 +411,12 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        # Nos applications (e-mails, commandes, manuscrits...) : visibles dans les logs Render
+        'apps': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
 
