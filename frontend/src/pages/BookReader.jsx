@@ -6,8 +6,11 @@ import api from '../services/api';
 import '../styles/BookReader.css';
 
 // PDF.js — worker pour le rendu (évite de bloquer le thread principal)
-import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+// Build « legacy » de PDF.js : elle embarque les polyfills des fonctions JS
+// récentes (ex. Map#getOrInsertComputed) absentes de Safari iOS et d'autres
+// navigateurs — la build standard n'affichait plus aucune page sur ces appareils.
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+import pdfjsWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
 
 // ─── Icônes SVG inline ──────────────────────────────────────────────────────
