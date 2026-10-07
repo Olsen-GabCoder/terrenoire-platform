@@ -1111,6 +1111,9 @@
    LIVRES SIMILAIRES
    ============================================= */
 .bd-related {
+  margin-top: 3rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--tn-gray-200);
   margin-bottom: 2.5rem;
 }
 
@@ -1156,7 +1159,7 @@
 
 @media (max-width: 768px) {
   .bd-hero {
-    padding: 5.5rem 1rem 2.5rem;
+    padding: 28px 16px 24px;
   }
 
   .bd-breadcrumb__current {
@@ -1299,4 +1302,96 @@
   .bd-price { font-size: 1.75rem; }
   .bd-price--ebook { font-size: 1.25rem; }
   .bd-image-wrapper { max-width: 220px; }
+}
+
+/* ── Zone d'achat : quantité confortable, bouton sur une ligne ── */
+.bd-buy-row .bd-quantity {
+  gap: 4px;
+  padding: 4px;
+  border-radius: 8px;
+}
+.bd-quantity__btn,
+.bd-buy-row .bd-quantity__btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+.bd-buy-row .bd-btn--cart { white-space: nowrap; }
+.bd-read-action { margin-top: 4px; }
+.bd-read-action .bd-btn { width: 100%; justify-content: center; }
+
+/* Fiche technique : discrète, après l'achat */
+.bd-info-block--specs { margin-top: 20px; margin-bottom: 0; }
+
+/* Onglets : jamais tronqués */
+.bd-tabs__btn { white-space: nowrap; flex-shrink: 0; }
+@media (max-width: 480px) {
+  .bd-buy-row .bd-quantity__btn { width: 40px; height: 40px; }
+  .bd-tabs__header { gap: 20px; scrollbar-width: none; }
+  .bd-tabs__header::-webkit-scrollbar { display: none; }
+  .bd-tabs__btn i { display: none; }
+}
+
+/* ── Barre d'achat collante (mobile) ── */
+.bd-sticky-buy { display: none; }
+@media (max-width: 768px) {
+  .bd-page { padding-bottom: 72px; }
+  .bd-sticky-buy {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--tn-bottom-nav-h, 68px);
+    z-index: 9997;
+    padding: 10px 16px;
+    background: var(--ds-white);
+    border-top: 1px solid var(--tn-gray-200);
+    box-shadow: 0 -6px 18px rgba(20, 14, 8, 0.08);
+    transform: translateY(calc(100% + var(--tn-bottom-nav-h, 68px)));
+    visibility: hidden;
+    transition: transform 260ms var(--tn-ease, ease), visibility 0s linear 260ms;
+  }
+  .bd-sticky-buy.is-visible {
+    transform: translateY(0);
+    visibility: visible;
+    transition: transform 260ms var(--tn-ease, ease), visibility 0s;
+  }
+  .bd-sticky-buy__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .bd-sticky-buy__title {
+    font-family: var(--tn-serif);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--tn-gray-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .bd-sticky-buy__price {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--tn-orange);
+  }
+  .bd-sticky-buy__price small {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--tn-gray-500);
+  }
+  .bd-sticky-buy__btn {
+    flex-shrink: 0;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+}
+@media (max-width: 768px) {
+  /* Le bouton « haut de page » remonte au-dessus de la barre d'achat */
+  body:has(.bd-sticky-buy.is-visible) .ft-top-btn {
+    bottom: calc(var(--tn-bottom-nav-h, 68px) + 76px);
+  }
 }

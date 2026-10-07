@@ -506,3 +506,36 @@ class EbookOnlyOrderTests(APITestCase):
         message = str(response.data)
         self.assertIn('profil est incomplet', message)
         self.assertIn('adresse', message)
+
+
+class NewBadgeTests(APITestCase):
+    """Le badge « Nouveau » ne marque que les derniers livres ajoutés."""
+
+    def setUp(self):
+        cache.clear()
+        from apps.books.models import Author, Category
+        self.author = Author.objects.create(full_name='Auteur Test', slug='auteur-test')
+        self.cat = Category.objects.create(name='Catégorie badge', slug='categorie-badge')
+
+    def _book(self, i, days_ago):
+        from datetime import timedelta
+        from django.utils import timezone
+        from apps.books.models import Book
+        b = Book.objects.create(
+            title=f'Livre {i}', reference=f'REF-NEW-{i}', description='x' * 60,
+            price=5000, author=self.author, category=self.cat, available=True,
+        )
+        Book.objects.filter(pk=b.pk).update(created_at=timezone.now() - timedelta(days=days_ago))
+        return b
+
+    def test_only_latest_recent_books_are_new(self):
+        from apps.books.serializers import NEW_BOOKS_COUNT
+        recent = [self._book(i, days_ago=i) for i in range(NEW_BOOKS_COUNT + 3)]
+        old = self._book(99, days_ago=120)
+        res = self.client.get('/api/books/?page_size=50')
+        self.assertEqual(res.status_code, 200)
+        data = res.data.get('results', res.data)
+        flags = {row['id']: row['is_new'] for row in data}
+        expected_new = {b.id for b in recent[:NEW_BOOKS_COUNT]}
+        self.assertEqual({i for i, f in flags.items() if f}, expected_new)
+        self.assertFalse(flags[old.id])

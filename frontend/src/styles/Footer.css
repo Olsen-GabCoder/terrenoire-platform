@@ -1117,3 +1117,10 @@
   width: 20px;
   text-align: center;
 }
+
+/* Pied de page réduit (tunnel de commande) */
+.ft--minimal .ft__main { padding-top: 8px; padding-bottom: 24px; }
+.ft--minimal .ft__bottom-section { margin-top: 0; }
+@media (max-width: 768px) {
+  .ft--minimal .ft__main { padding: 4px 16px 20px; }
+}

@@ -11,7 +11,6 @@ import TnTextarea from '../components/ui/TnTextarea';
 import TnButton from '../components/ui/TnButton';
 import TnAlert from '../components/ui/TnAlert';
 import useParallax from '../hooks/useParallax';
-import SectionSeparator from '../components/SectionSeparator';
 import '../styles/BookDetail.css';
 import TnBookCover from '../components/ui/TnBookCover';
 
@@ -125,6 +124,20 @@ const BookDetail = () => {
   const handleAddEbook = () => {
     if (book?.available && book?.has_ebook) addToCart(book, 1, 'EBOOK');
   };
+
+  // Barre d'achat collante (mobile) : apparaît quand la zone d'achat n'est plus visible
+  const actionsRef = useRef(null);
+  const [showStickyBuy, setShowStickyBuy] = useState(false);
+  useEffect(() => {
+    const el = actionsRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return undefined;
+    const obs = new IntersectionObserver(
+      ([entry]) => setShowStickyBuy(!entry.isIntersecting && entry.boundingClientRect.top < 0),
+      { threshold: 0 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [book?.id, loading]);
 
   const handleBuyNow = () => {
     if (book?.available) {
@@ -305,8 +318,12 @@ const BookDetail = () => {
         <div className="bd-hero__inner">
           <nav className="bd-breadcrumb" aria-label="Fil d'Ariane">
             <Link to="/catalog" className="bd-breadcrumb__link">Catalogue</Link>
-            <span className="bd-breadcrumb__sep">/</span>
-            <span className="bd-breadcrumb__current">{book.title}</span>
+            {book.category?.id && (
+              <>
+                <span className="bd-breadcrumb__sep">/</span>
+                <Link to={`/catalog?category=${book.category.id}`} className="bd-breadcrumb__link">{categoryName}</Link>
+              </>
+            )}
           </nav>
           <div className="bd-hero__line" />
           <h1 className="bd-hero__title">{book.title}</h1>
@@ -374,31 +391,6 @@ const BookDetail = () => {
 
             {/* Infos + actions */}
             <div className="bd-info-section">
-              <div className="bd-info-block">
-                <div className="bd-meta-row">
-                  <span className="bd-meta-item">
-                    <span className="bd-meta-label">Auteur</span>
-                    <span className="bd-meta-value">{authorName}</span>
-                  </span>
-                  <span className="bd-meta-item">
-                    <span className="bd-meta-label">Catégorie</span>
-                    <span className="bd-meta-value">{categoryName}</span>
-                  </span>
-                  <span className="bd-meta-item">
-                    <span className="bd-meta-label">Format</span>
-                    <span className="bd-meta-value">
-                      {book.has_ebook ? 'Papier + Ebook' : 'Livre papier'}
-                    </span>
-                  </span>
-                  {book.reference && (
-                    <span className="bd-meta-item">
-                      <span className="bd-meta-label">Référence</span>
-                      <span className="bd-meta-value bd-meta-value--code">{book.reference}</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-
               <div className="bd-price-block">
                 <div className="bd-price-row">
                   {book.has_discount && book.original_price && (
@@ -426,16 +418,8 @@ const BookDetail = () => {
                 </div>
               </div>
 
-              {book.excerpt_pdf_url && (
-                <div className="bd-read-action">
-                  <Link to={`/books/${id}/excerpt-read`} className="bd-btn bd-btn--outline">
-                    <i className="fas fa-book-open-reader" /> Lire un extrait
-                  </Link>
-                </div>
-              )}
-
               {book.available && (
-                <div className="bd-actions">
+                <div className="bd-actions" ref={actionsRef}>
                   {/* Papier : quantité + bouton sur la même ligne */}
                   <div className="bd-buy-row">
                     <div className="bd-quantity" role="group" aria-label="Quantité (livre papier)">
@@ -496,9 +480,42 @@ const BookDetail = () => {
                 </div>
               )}
 
+              {book.excerpt_pdf_url && (
+                <div className="bd-read-action">
+                  <Link to={`/books/${id}/excerpt-read`} className="bd-btn bd-btn--outline">
+                    <i className="fas fa-book-open-reader" /> Lire un extrait
+                  </Link>
+                </div>
+              )}
+
               <TnAlert variant="info" style={{ marginTop: 16 }}>
                 Livraison des livres papier à Libreville, Port-Gentil et Lambaréné. Ailleurs au Gabon, retrait en main propre dans l'une de ces villes.
               </TnAlert>
+              <div className="bd-info-block bd-info-block--specs">
+                <div className="bd-meta-row">
+                  <span className="bd-meta-item">
+                    <span className="bd-meta-label">Auteur</span>
+                    <span className="bd-meta-value">{authorName}</span>
+                  </span>
+                  <span className="bd-meta-item">
+                    <span className="bd-meta-label">Catégorie</span>
+                    <span className="bd-meta-value">{categoryName}</span>
+                  </span>
+                  <span className="bd-meta-item">
+                    <span className="bd-meta-label">Format</span>
+                    <span className="bd-meta-value">
+                      {book.has_ebook ? 'Papier + Ebook' : 'Livre papier'}
+                    </span>
+                  </span>
+                  {book.reference && (
+                    <span className="bd-meta-item">
+                      <span className="bd-meta-label">Référence</span>
+                      <span className="bd-meta-value bd-meta-value--code">{book.reference}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -939,7 +956,6 @@ const BookDetail = () => {
           </div>
 
           {/* Livres similaires */}
-          {relatedBooks.length > 0 && <SectionSeparator direction="cream-to-cream" variant={1} />}
           {relatedBooks.length > 0 && (
             <section className="bd-related">
               <h2 className="bd-related__title">
@@ -967,6 +983,39 @@ const BookDetail = () => {
           )}
         </div>
       </div>
+
+      {/* Barre d'achat collante (mobile uniquement, voir BookDetail.css) */}
+      {book.available && (() => {
+        const paperIn = isInCart(book.id, 'PAPIER');
+        const ebookOffer = book.has_ebook && book.ebook_price;
+        const ebookIn = isInCart(book.id, 'EBOOK');
+        const allIn = paperIn && (!ebookOffer || ebookIn);
+        return (
+          <div className={`bd-sticky-buy ${showStickyBuy ? 'is-visible' : ''}`} aria-hidden={!showStickyBuy}>
+            <div className="bd-sticky-buy__info">
+              <span className="bd-sticky-buy__title">{book.title}</span>
+              <span className="bd-sticky-buy__price">
+                {formatPrice(paperIn && ebookOffer && !ebookIn ? book.ebook_price : book.price)}
+                <small>{paperIn && ebookOffer && !ebookIn ? ' · ebook' : ' · papier'}</small>
+              </span>
+            </div>
+            {allIn ? (
+              <Link to="/cart" className="tn-btn tn-btn--primary bd-sticky-buy__btn" tabIndex={showStickyBuy ? 0 : -1}>
+                Voir le panier <i className="fas fa-arrow-right" aria-hidden="true" />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                className="tn-btn tn-btn--primary bd-sticky-buy__btn"
+                onClick={paperIn ? handleAddEbook : handleAddPaper}
+                tabIndex={showStickyBuy ? 0 : -1}
+              >
+                <i className="fas fa-bag-shopping" aria-hidden="true" /> {paperIn ? 'Ajouter l\'ebook' : 'Ajouter'}
+              </button>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 };

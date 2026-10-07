@@ -14,6 +14,7 @@ import {
 import '../styles/Checkout.css';
 import TnBookCover from '../components/ui/TnBookCover';
 import PageHero from '../components/ui/PageHero';
+import CheckoutSteps from '../components/ui/CheckoutSteps';
 
 const OPERATOR_NAMES = { moov_money: 'Moov Money', airtel_money: 'Airtel Money' };
 
@@ -280,6 +281,7 @@ const Checkout = () => {
           : 'Vérifiez votre commande avant de confirmer.'}
       />
 
+      <div className="tn-steps-wrap"><CheckoutSteps current="checkout" /></div>
       <form onSubmit={handleSubmit} className="chk-content">
         {retryOrder && (
           <div className="chk-retry-banner">

@@ -51,7 +51,7 @@ function DevModalContent({ onClose, children }) {
   );
 }
 
-const Footer = () => {
+const Footer = ({ minimal = false }) => {
   const year = new Date().getFullYear();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('');
@@ -102,20 +102,23 @@ const Footer = () => {
 
   return (
     <>
-      <footer className="ft">
+      <footer className={`ft ${minimal ? 'ft--minimal' : ''}`}>
         <div className="ft__motif-bg tn-motif-bg" />
 
         {/* ── CITATION AFRICAINE ── */}
+        {!minimal && (
         <div className="ft__citation">
           <blockquote className="ft__citation-text">
             « {quote.text} »
           </blockquote>
           <cite className="ft__citation-author">— {quote.author}</cite>
         </div>
+        )}
 
         {/* ── MAIN 4-COLUMN GRID ── */}
         <div className="ft__main">
           <div className="ft__wrap">
+            {!minimal && (<>
             <div className="ft__grid">
 
               {/* COL 1 — Brand */}
@@ -225,6 +228,8 @@ const Footer = () => {
               )}
             </div>
 
+            </>)}
+
             {/* ── PAYMENTS + BOTTOM ── */}
             <div className="ft__bottom-section">
               <TnDivider dark />
@@ -254,6 +259,7 @@ const Footer = () => {
                   <Link to="/cookies">Cookies</Link>
                 </div>
               </div>
+              {!minimal && (
               <div className="ft__credit">
                 <span className="ft__credit-label">Conception & Développement</span>
                 <button className="ft__credit-dev" onClick={() => setShowDevModal(true)}>
@@ -261,12 +267,15 @@ const Footer = () => {
                   <i className="fas fa-arrow-up-right-from-square ft__credit-dev-icon" />
                 </button>
               </div>
+              )}
             </div>
 
             {/* ── COLOPHON ── */}
+            {!minimal && (
             <div className="ft__colophon">
               Terre Noire Éditions est composée en Playfair Display &amp; Inter.
             </div>
+            )}
           </div>
         </div>
       </footer>

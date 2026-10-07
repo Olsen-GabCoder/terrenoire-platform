@@ -1,0 +1,90 @@
+/* Repère d'étapes du tunnel d'achat */
+.tn-steps-wrap {
+  background: var(--tn-cream);
+  padding: 28px 24px 0;
+}
+.tn-steps-wrap + .crt-content,
+.tn-steps-wrap + .chk-content,
+.tn-steps-wrap + .cpay-body {
+  padding-top: 0;
+}
+@media (max-width: 480px) {
+  .tn-steps-wrap { padding: 20px 16px 0; }
+}
+.tn-steps {
+  max-width: 640px;
+  margin: 0 auto 24px;
+}
+.tn-steps__list {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tn-steps__item {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+.tn-steps__item:last-child { flex: 0 0 auto; }
+/* trait entre deux étapes */
+.tn-steps__item:not(:last-child)::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  margin: 0 10px;
+  border-radius: 2px;
+  background: var(--tn-gray-200);
+}
+.tn-steps__item--done:not(:last-child)::after { background: var(--tn-orange); }
+.tn-steps__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  color: var(--tn-gray-500);
+  text-decoration: none;
+  white-space: nowrap;
+}
+a.tn-steps__link:hover .tn-steps__label { text-decoration: underline; }
+.tn-steps__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--tn-gray-300);
+  background: var(--ds-white);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tn-gray-500);
+}
+.tn-steps__item--done .tn-steps__dot {
+  border-color: var(--tn-orange);
+  background: var(--tn-orange);
+  color: var(--ds-white);
+  font-size: 11px;
+}
+.tn-steps__item--current .tn-steps__dot {
+  border-color: var(--tn-orange);
+  color: var(--tn-orange);
+}
+.tn-steps__label {
+  font-size: 14px;
+  font-weight: 600;
+}
+.tn-steps__item--current .tn-steps__label { color: var(--tn-gray-900); }
+.tn-steps__item--done .tn-steps__label { color: var(--tn-gray-700); }
+.tn-steps__label-short { display: none; }
+@media (max-width: 480px) {
+  .tn-steps { margin-bottom: 20px; }
+  .tn-steps__label { font-size: 13px; }
+  .tn-steps__label-long { display: none; }
+  .tn-steps__label-short { display: inline; }
+  .tn-steps__item:not(:last-child)::after { margin: 0 8px; }
+  .tn-steps__link { gap: 6px; }
+}

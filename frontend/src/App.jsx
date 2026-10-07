@@ -195,7 +195,8 @@ function AppContent() {
         </ErrorBoundary>
       </main>
       {!isAdminRoute && !isReaderPage && <SectionSeparator direction="cream-to-dark" variant={1} />}
-      {!isAdminRoute && !isReaderPage && <Footer />}
+      {/* Pendant la commande et le paiement : pied de page réduit, sans distraction */}
+      {!isAdminRoute && !isReaderPage && <Footer minimal={location.pathname.startsWith('/checkout')} />}
       {!isAdminRoute && !isReaderPage && <BottomNav />}
     </div>
   );

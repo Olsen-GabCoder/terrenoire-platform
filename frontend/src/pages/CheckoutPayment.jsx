@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import orderService from '../services/orderService';
 import '../styles/CheckoutPayment.css';
 import PageHero from '../components/ui/PageHero';
+import CheckoutSteps from '../components/ui/CheckoutSteps';
 
 const OPERATOR_LABELS = {
   moov_money: 'Moov Money',
@@ -206,6 +207,7 @@ const CheckoutPayment = () => {
     <div className="cpay-page">
       <PageHero compact title={heroTitles[status] || heroTitles.PENDING} />
 
+      <div className="tn-steps-wrap"><CheckoutSteps current="payment" /></div>
       <div className="cpay-body">
 
         {/* ═══ PENDING ═══ */}

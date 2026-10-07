@@ -1,5 +1,13 @@
+from datetime import timedelta
+
+from django.utils import timezone
 from rest_framework import serializers
+
 from .models import Category, Author, Collection, Book, BookReview, ReviewLike
+
+# Badge « Nouveau » : les N derniers livres ajoutés, s'ils ont moins de X jours
+NEW_BOOKS_COUNT = 6
+NEW_BOOKS_DAYS = 60
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -79,6 +87,7 @@ class BookListSerializer(serializers.ModelSerializer):
     # Champs calculés
     has_pdf = serializers.SerializerMethodField()
     has_excerpt = serializers.SerializerMethodField()
+    is_new = serializers.SerializerMethodField()
 
     # === NOUVEAUX CHAMPS ===
     # Promotions et prix
@@ -147,11 +156,30 @@ class BookListSerializer(serializers.ModelSerializer):
             'trending_score',
             'has_pdf',
             'has_excerpt',
+            'is_new',
         ]
         read_only_fields = ['id', 'slug', 'created_at']
 
     def get_has_pdf(self, obj):
         return bool(obj.pdf_file)
+
+    def get_is_new(self, obj):
+        """
+        « Nouveau » seulement pour les vraies nouveautés : les NEW_BOOKS_COUNT
+        derniers livres ajoutés, et depuis moins de NEW_BOOKS_DAYS jours.
+        (Avec une règle « moins de 30 jours », tout le catalogue d'un
+        lancement était marqué Nouveau et le badge ne voulait plus rien dire.)
+        Calculé une seule fois par requête.
+        """
+        cache = self.context.setdefault('_new_book_ids', {})
+        if 'ids' not in cache:
+            since = timezone.now() - timedelta(days=NEW_BOOKS_DAYS)
+            cache['ids'] = set(
+                Book.objects.filter(created_at__gte=since)
+                .order_by('-created_at')
+                .values_list('id', flat=True)[:NEW_BOOKS_COUNT]
+            )
+        return obj.id in cache['ids']
 
     def get_has_excerpt(self, obj):
         return bool(obj.excerpt_pdf)

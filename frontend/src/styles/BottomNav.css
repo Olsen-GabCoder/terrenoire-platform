@@ -7,6 +7,11 @@
   display: none;
 }
 
+/* Hauteur de la barre du bas, réutilisée par les barres collantes (fiche livre) */
+:root {
+  --tn-bottom-nav-h: calc(47px + max(20px, env(safe-area-inset-bottom)));
+}
+
 @media (max-width: 768px) {
   .bottom-nav {
     display: flex;

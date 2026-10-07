@@ -9,6 +9,7 @@ import { TnBookCover } from '../components/ui';
 import '../styles/Cart.css';
 import PageHero from '../components/ui/PageHero';
 import EmptyState from '../components/ui/EmptyState';
+import CheckoutSteps from '../components/ui/CheckoutSteps';
 
 const Cart = () => {
   const { shippingFreeThreshold, shippingCost } = useDeliveryConfig();
@@ -136,6 +137,7 @@ const Cart = () => {
         subtitle={`${getTotalItems()} article${getTotalItems() > 1 ? 's' : ''} dans votre panier`}
       />
 
+      <div className="tn-steps-wrap"><CheckoutSteps current="cart" /></div>
       <div className="crt-content">
         <div className="crt-layout">
 

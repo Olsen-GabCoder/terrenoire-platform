@@ -66,7 +66,10 @@ const BookCard = ({ book, featured = false }) => {
   const inCart = hasEbookOffer ? paperInCart && ebookInCart : paperInCart;
   const oos = !book.available;
   const hasCoverImage = book.cover_image && !imageError;
-  const isNew = book.created_at && (Date.now() - new Date(book.created_at).getTime()) < 30 * 24 * 60 * 60 * 1000;
+  // « Nouveau » décidé par l'API (derniers livres ajoutés) ; repli sur l'ancienne règle
+  const isNew = typeof book.is_new === 'boolean'
+    ? book.is_new
+    : book.created_at && (Date.now() - new Date(book.created_at).getTime()) < 30 * 24 * 60 * 60 * 1000;
   const isValidIsbn = book.reference && /^(\d{10}|\d{13})$/.test(String(book.reference).replace(/[-\s]/g, ''));
 
   return (
@@ -130,7 +133,7 @@ const BookCard = ({ book, featured = false }) => {
       <div className="tn-book-card__body">
         {/* Meta pills */}
         <div className="tn-book-card__meta">
-          {categoryName && <span className="tn-pill tn-pill--orange">{categoryName}</span>}
+          {categoryName && <span className="tn-pill tn-pill--orange tn-book-card__pill-cat">{categoryName}</span>}
           <span className="tn-pill tn-pill--gray">{book.has_ebook ? 'Papier + Ebook' : 'Papier'}</span>
           {book.is_bestseller && <span className="tn-pill tn-pill--dark">★ Best-seller</span>}
         </div>
@@ -172,7 +175,7 @@ const BookCard = ({ book, featured = false }) => {
               onClick={(e) => handleChooseFormat(e, 'PAPIER')}
               disabled={paperInCart}
             >
-              <span><i className="fas fa-book" /> Papier</span>
+              <span className="tn-book-card__format-name"><i className="fas fa-book" aria-hidden="true" /> Papier</span>
               <span className="tn-book-card__format-price">
                 {paperInCart ? 'Dans le panier' : <TnPrice amount={price} size="sm" />}
               </span>
@@ -183,7 +186,7 @@ const BookCard = ({ book, featured = false }) => {
               onClick={(e) => handleChooseFormat(e, 'EBOOK')}
               disabled={ebookInCart}
             >
-              <span><i className="fas fa-tablet-screen-button" /> Ebook</span>
+              <span className="tn-book-card__format-name"><i className="fas fa-tablet-screen-button" aria-hidden="true" /> Ebook</span>
               <span className="tn-book-card__format-price">
                 {ebookInCart ? 'Dans le panier' : <TnPrice amount={parseFloat(book.ebook_price) || 0} size="sm" />}
               </span>
