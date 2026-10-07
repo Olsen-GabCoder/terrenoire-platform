@@ -501,12 +501,17 @@ class PaymentCheckStatusView(APIView):
 
 def _webhook_token_is_valid(request):
     """
-    Vérifie le jeton secret du webhook si BAMBOO_WEBHOOK_SECRET est défini.
+    Vérifie le jeton secret du webhook (BAMBOO_WEBHOOK_SECRET, obligatoire en production).
     Le jeton est ajouté automatiquement à l'URL de callback envoyée à Bamboo.
     """
     secret = os.environ.get('BAMBOO_WEBHOOK_SECRET', '')
     if not secret:
-        return True
+        # En production, un webhook sans secret configuré est refusé (fail closed) :
+        # sinon n'importe qui pourrait l'appeler. Ouvert uniquement en développement.
+        if settings.DEBUG:
+            return True
+        logger.error("payment.webhook_refused reason=BAMBOO_WEBHOOK_SECRET_absent")
+        return False
     provided = request.query_params.get('token', '')
     return hmac.compare_digest(provided.encode(), secret.encode())
 

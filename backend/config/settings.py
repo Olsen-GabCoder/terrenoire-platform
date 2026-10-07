@@ -344,7 +344,17 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
+    # En production, la documentation de l'API (schéma, Swagger, ReDoc) n'est
+    # visible que des administrateurs : elle cartographie tous les endpoints.
+    'SERVE_PERMISSIONS': (
+        ['rest_framework.permissions.AllowAny'] if DEBUG
+        else ['rest_framework.permissions.IsAdminUser']
+    ),
 }
+
+# Lien de réinitialisation du mot de passe : 24 h (comme annoncé dans l'e-mail ;
+# la valeur par défaut de Django est de 3 jours)
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24
 
 # Configuration JWT
 SIMPLE_JWT = {

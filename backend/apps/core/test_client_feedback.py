@@ -308,8 +308,9 @@ class BambooPayRedirectTests(APITestCase):
         self.assertEqual(response.data['status'], 'PENDING')
 
 
+@mock.patch.dict('os.environ', {'BAMBOO_WEBHOOK_SECRET': 'cb-secret'})
 class BambooCallbackTests(APITestCase):
-    URL = '/api/payments/webhook/'
+    URL = '/api/payments/webhook/?token=cb-secret'
 
     def setUp(self):
         user = User.objects.create_user(username='cb', email='cb@example.com', password='x', phone_number='+24166000010')

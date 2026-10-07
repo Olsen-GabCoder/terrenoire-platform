@@ -4,6 +4,7 @@ Charte : orange #E8601C, noir #0A0A0A, creme #FAFAF5, or #C8956C
 """
 import io
 import locale
+from xml.sax.saxutils import escape as _xml_escape
 
 from django.conf import settings
 from reportlab.lib import colors
@@ -14,6 +15,11 @@ from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, HRFlowable,
 )
+
+
+def _esc(value):
+    """Échappe une valeur avant insertion dans un Paragraph ReportLab."""
+    return _xml_escape(str(value or ''))
 
 
 # Couleurs charte
@@ -101,7 +107,9 @@ def generate_order_invoice_pdf(order):
     # INFOS COMMANDE + CLIENT (2 colonnes)
     # ─────────────────────────────────────────────
     user = order.user
-    client_name = user.get_full_name() or user.username
+    # Toute donnée saisie par un client est échappée : les Paragraph ReportLab
+    # interprètent un balisage (<b>, <a>, <img>…) qui casserait la facture.
+    client_name = _esc(user.get_full_name() or user.username)
     phone = getattr(user, 'phone_number', '') or order.shipping_phone
 
     info_left = []
@@ -115,14 +123,14 @@ def generate_order_invoice_pdf(order):
     info_left.append(Paragraph(f"<b>Heure :</b> {d.strftime('%H:%M')}", s_normal))
     info_left.append(Paragraph(f"<b>Statut :</b> {order.get_status_display()}", s_normal))
     if order.coupon_code:
-        info_left.append(Paragraph(f"<b>Coupon :</b> {order.coupon_code}", s_normal))
+        info_left.append(Paragraph(f"<b>Coupon :</b> {_esc(order.coupon_code)}", s_normal))
 
     info_right = []
     info_right.append(Paragraph("CLIENT", s_label))
     info_right.append(Paragraph(f"<b>{client_name}</b>", s_normal))
-    info_right.append(Paragraph(user.email or '', s_small))
+    info_right.append(Paragraph(_esc(user.email), s_small))
     if phone:
-        info_right.append(Paragraph(f"Tel : {phone}", s_small))
+        info_right.append(Paragraph(f"Tel : {_esc(phone)}", s_small))
 
     info_data = [[
         [p for p in info_left],
@@ -139,10 +147,10 @@ def generate_order_invoice_pdf(order):
 
     # Adresse de livraison
     elements.append(Paragraph("ADRESSE DE LIVRAISON", s_label))
-    addr_text = f"{order.shipping_address}"
+    addr_text = _esc(order.shipping_address)
     if order.shipping_city:
-        addr_text += f", {order.shipping_city}"
-    addr_text += f" — Tel : {order.shipping_phone}"
+        addr_text += f", {_esc(order.shipping_city)}"
+    addr_text += f" — Tel : {_esc(order.shipping_phone)}"
     elements.append(Paragraph(addr_text, s_normal))
     elements.append(Spacer(1, 8 * mm))
 
@@ -159,12 +167,12 @@ def generate_order_invoice_pdf(order):
         total = float(item.price * item.quantity)
         author_name = ''
         if hasattr(item.book, 'author') and item.book.author:
-            author_name = item.book.author.full_name
-        title_text = item.book.title
+            author_name = _esc(item.book.author.full_name)
+        title_text = _esc(item.book.title)
         if author_name:
             title_text += f"<br/><font size='7' color='#6B6B6B'>{author_name}</font>"
         if hasattr(item, 'format_purchased') and item.format_purchased:
-            title_text += f"<font size='7' color='#C8956C'> &middot; {item.format_purchased}</font>"
+            title_text += f"<font size='7' color='#C8956C'> &middot; {_esc(item.format_purchased)}</font>"
 
         data.append([
             str(idx),

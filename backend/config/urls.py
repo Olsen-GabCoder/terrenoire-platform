@@ -10,11 +10,12 @@ from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from apps.users.jwt_cookie_views import CookieTokenObtainPairView, CookieTokenRefreshView, LogoutView
-from .views import api_root, health_check, admin_backup
+from .views import api_root, health_check, admin_backup, client_ip_diagnostic
 
 urlpatterns = [
-    # Racine : redirection vers la doc API (évite 404 sur GET /)
-    path('', RedirectView.as_view(url='/api/docs/', permanent=False)),
+    # Racine : doc API en développement, découverte publique de l'API en production
+    # (la doc est réservée aux administrateurs en production)
+    path('', RedirectView.as_view(url='/api/docs/' if settings.DEBUG else '/api/', permanent=False)),
     # Accueil admin → Groupes par défaut
     path('admin/', RedirectView.as_view(url='/admin/auth/group/', permanent=False)),
     # Backup admin
@@ -30,6 +31,8 @@ urlpatterns = [
     # API Racine et santé (routes spécifiques AVANT les routes générales)
     path('api/root/', api_root, name='api-root'),
     path('api/health/', health_check, name='health-check'),
+    # TEMPORAIRE : diagnostic de l'IP client (admins), voir config/views.py
+    path('api/admin/ip-diagnostic/', client_ip_diagnostic, name='ip-diagnostic'),
     path('api/', api_root),  # GET /api/ sans auth (découverte des endpoints)
     
     # API Authentication JWT (cookies HttpOnly)

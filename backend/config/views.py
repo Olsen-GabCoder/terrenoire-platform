@@ -7,9 +7,12 @@ from django.utils import timezone
 from django.core.management import call_command
 from django.http import HttpResponse
 from django.contrib.admin.views.decorators import staff_member_required
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAdminUser
+
+from apps.users.jwt_cookie_auth import JWTCookieAuthentication
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -96,3 +99,24 @@ def admin_backup(request):
     response = HttpResponse(content, content_type='application/json')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, JWTCookieAuthentication])
+@permission_classes([IsAdminUser])
+def client_ip_diagnostic(request):
+    """
+    TEMPORAIRE (sécurité, étape 2) — réservé aux administrateurs.
+    Montre comment l'hébergeur transmet l'adresse IP du visiteur, pour régler
+    la limite de tentatives (NUM_PROXIES) sur la réalité et non sur une supposition.
+    À retirer une fois le réglage fait.
+    """
+    meta = request.META
+    xff = meta.get('HTTP_X_FORWARDED_FOR', '')
+    return Response({
+        'remote_addr': meta.get('REMOTE_ADDR'),
+        'x_forwarded_for': xff,
+        'x_forwarded_for_count': len([p for p in xff.split(',') if p.strip()]) if xff else 0,
+        'true_client_ip': meta.get('HTTP_TRUE_CLIENT_IP'),
+        'cf_connecting_ip': meta.get('HTTP_CF_CONNECTING_IP'),
+        'x_real_ip': meta.get('HTTP_X_REAL_IP'),
+    })

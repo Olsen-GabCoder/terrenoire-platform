@@ -68,8 +68,10 @@ class BaseOrderTestCase(APITestCase):
         return payload
 
 
+@mock.patch.dict('os.environ', {'BAMBOO_WEBHOOK_SECRET': 's3cret'})
 class WebhookTests(BaseOrderTestCase):
-    URL = '/api/payments/webhook/'
+    BASE_URL = '/api/payments/webhook/'
+    URL = BASE_URL + '?token=s3cret'
 
     def test_forged_webhook_does_not_mark_order_paid(self):
         """Le statut envoyé dans le webhook est ignoré : Bamboo dit 'pending'."""
@@ -109,14 +111,26 @@ class WebhookTests(BaseOrderTestCase):
         self.order.refresh_from_db()
         self.assertEqual(self.order.status, 'CANCELLED')
 
-    @mock.patch.dict('os.environ', {'BAMBOO_WEBHOOK_SECRET': 's3cret'})
     def test_webhook_secret_token_required(self):
         with mock.patch('apps.orders.views.get_bamboo_service') as svc:
             svc.return_value.check_status.return_value = bamboo_result('completed')
-            bad = self.client.post(self.URL, {'reference': 'TXN-TEST-1'}, format='json')
-            good = self.client.post(self.URL + '?token=s3cret', {'reference': 'TXN-TEST-1'}, format='json')
+            bad = self.client.post(self.BASE_URL, {'reference': 'TXN-TEST-1'}, format='json')
+            wrong = self.client.post(self.BASE_URL + '?token=autre', {'reference': 'TXN-TEST-1'}, format='json')
+            good = self.client.post(self.URL, {'reference': 'TXN-TEST-1'}, format='json')
         self.assertEqual(bad.status_code, 403)
+        self.assertEqual(wrong.status_code, 403)
         self.assertEqual(good.status_code, 200)
+
+    @mock.patch.dict('os.environ', {'BAMBOO_WEBHOOK_SECRET': ''})
+    def test_webhook_refused_in_production_without_secret(self):
+        """Fail closed : sans secret configuré (et hors DEBUG), le webhook est refusé."""
+        with mock.patch('apps.orders.views.get_bamboo_service') as svc:
+            svc.return_value.check_status.return_value = bamboo_result('completed', amount='5000')
+            response = self.client.post(self.BASE_URL, {'reference': 'TXN-TEST-1'}, format='json')
+        self.assertEqual(response.status_code, 403)
+        svc.return_value.check_status.assert_not_called()
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, 'PENDING')
 
     def test_webhook_recovers_expired_payment_when_bamboo_confirms(self):
         self.payment.status = 'EXPIRED'
@@ -295,3 +309,49 @@ class EbookAccessTests(BaseOrderTestCase):
         self.order.save()
         self.assertTrue(self._can_read(self.user))
         self.assertFalse(self._can_read(self.other))
+
+
+class SecurityHardeningTests(APITestCase):
+    """Lot A sécurité : facture échappée, doc API privée, lien de réinitialisation 24 h."""
+
+    def test_invoice_escapes_user_markup(self):
+        from apps.core.invoice import generate_order_invoice_pdf
+        user = User.objects.create_user(
+            username='xss', email='xss@example.com', password='x',
+            first_name='<b>Awa', last_name='<img src="file:///etc/passwd"/>',
+            phone_number='+24174301639',
+        )
+        order = Order.objects.create(
+            user=user, subtotal=Decimal('5000'), total_amount=Decimal('5000'),
+            shipping_address='Rue <a href="javascript:x">1</a> & Co', shipping_city='Port-Gentil <font',
+            shipping_phone='+24174301639',
+        )
+        pdf = generate_order_invoice_pdf(order)
+        data = pdf.getvalue() if hasattr(pdf, 'getvalue') else pdf
+        self.assertTrue(bytes(data).startswith(b'%PDF'))
+
+    def test_api_docs_private_in_production(self):
+        """Hors DEBUG, la doc de l'API n'est servie qu'aux administrateurs."""
+        import importlib
+        import os
+        from django.conf import settings as dj_settings
+        with mock.patch.dict(os.environ, {'DEBUG': 'False', 'SECRET_KEY': 'test-key-not-default'}):
+            import config.settings as conf
+            prod = importlib.reload(conf)
+            self.assertEqual(prod.SPECTACULAR_SETTINGS['SERVE_PERMISSIONS'], ['rest_framework.permissions.IsAdminUser'])
+        importlib.reload(conf)  # remet la configuration du test
+        self.assertIsNotNone(dj_settings.SECRET_KEY)
+
+    def test_password_reset_link_lifetime_is_24h(self):
+        from django.conf import settings
+        self.assertEqual(settings.PASSWORD_RESET_TIMEOUT, 86400)
+
+
+class IpDiagnosticTests(APITestCase):
+    def test_reserved_to_admins(self):
+        self.assertIn(self.client.get('/api/admin/ip-diagnostic/').status_code, (401, 403))
+        admin = User.objects.create_user(username='adm', email='adm@example.com', password='x', is_staff=True)
+        self.client.force_authenticate(admin)
+        res = self.client.get('/api/admin/ip-diagnostic/', HTTP_X_FORWARDED_FOR='1.2.3.4, 10.0.0.1')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['x_forwarded_for_count'], 2)
