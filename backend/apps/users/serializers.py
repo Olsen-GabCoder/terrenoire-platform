@@ -74,11 +74,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         """
         Vérifie que l'email n'est pas déjà utilisé
         """
-        if User.objects.filter(email=value.lower()).exists():
+        # Comparaison insensible à la casse (des comptes anciens peuvent avoir
+        # un e-mail en majuscules)
+        if User.objects.filter(email__iexact=value.strip()).exists():
             raise serializers.ValidationError(
                 "Un compte avec cet email existe déjà."
             )
-        return value.lower()
+        return value.strip().lower()
     
     def validate_username(self, value):
         """
@@ -196,7 +198,10 @@ class UserDetailSerializer(serializers.ModelSerializer):
     
     def validate_phone_number(self, value):
         """Normalise le numéro (E.164) et vérifie qu'il n'est pas déjà utilisé."""
-        return validate_unique_phone(value, exclude_user=self.context['request'].user)
+        # Exclure l'utilisateur modifié (self.instance), pas l'administrateur qui
+        # fait la modification : sinon garder son propre numéro était refusé
+        exclude = self.instance if self.instance is not None else self.context['request'].user
+        return validate_unique_phone(value, exclude_user=exclude)
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
@@ -223,6 +228,17 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     def validate_phone_number(self, value):
         """Normalise le numéro (E.164) et vérifie qu'il n'est pas déjà utilisé."""
         return validate_unique_phone(value, exclude_user=self.instance)
+
+    def validate_profile_image(self, value):
+        """Photo de profil : 5 Mo maximum, JPEG / PNG / WebP uniquement."""
+        if value is None:
+            return value
+        if value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError("Image trop lourde : 5 Mo maximum.")
+        image = getattr(value, 'image', None)  # renseigné par ImageField (Pillow)
+        if image is not None and (image.format or '').upper() not in ('JPEG', 'PNG', 'WEBP'):
+            raise serializers.ValidationError("Format non accepté : JPEG, PNG ou WebP uniquement.")
+        return value
 
 
 class PasswordChangeSerializer(serializers.Serializer):

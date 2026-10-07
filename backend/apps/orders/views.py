@@ -86,6 +86,13 @@ class OrderViewSet(viewsets.ModelViewSet):
             return OrderStatusUpdateSerializer
         return OrderListSerializer
     
+    def get_throttles(self):
+        # Création de commandes limitée par compte (empêche de bloquer un code
+        # promo à usage limité en multipliant les commandes non payées)
+        if self.action == 'create':
+            return [OrderCreateThrottle()]
+        return super().get_throttles()
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -224,6 +231,11 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
 # =============================================
 #  BAMBOO PAY — Paiement Mobile Money
 # =============================================
+
+class OrderCreateThrottle(UserRateThrottle):
+    scope = 'order_create'
+    rate = '20/hour'
+
 
 class PaymentCheckStatusThrottle(UserRateThrottle):
     # Le polling client = 1 req/5s = 12/min exact.
@@ -581,6 +593,10 @@ class PaymentWebhookView(APIView):
             # On accuse réception ; le suivi client (check-status) et la
             # réconciliation rattraperont ce paiement.
             logger.warning("webhook.verification_failed ref=%s err=%s", payment.transaction_id, e)
+            # La notification n'a pas pu être vérifiée : on oublie sa clé pour
+            # qu'un renvoi de BambooPay (même idempotency_key) soit bien traité.
+            if idempotency_key:
+                PaymentNotification.objects.filter(idempotency_key=idempotency_key).delete()
             return Response({'status': 'received_verification_deferred'})
 
         payment = apply_bamboo_result(payment.pk, result, source='webhook')

@@ -7,6 +7,7 @@ from apps.core.models import SiteConfig
 from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
+from datetime import timedelta
 from decimal import Decimal
 
 from apps.users.phone import normalize_phone
@@ -107,6 +108,35 @@ class OrderCreateSerializer(serializers.Serializer):
 
         return attrs
 
+    @staticmethod
+    def _release_previous_coupon_use(user, coupon_code):
+        """
+        Une seule utilisation d'un code promo par client :
+        - déjà utilisé sur une commande payée (ou expédiée) : refus ;
+        - utilisé sur une commande non payée sans paiement en cours (paiement
+          échoué, client qui repasse commande) : l'ancienne commande est annulée
+          et le code libéré, pour ne pas bloquer le client ;
+        - paiement encore en cours sur l'ancienne commande : refus temporaire.
+        """
+        previous = list(
+            Order.objects.select_for_update()
+            .filter(user=user, coupon_code=coupon_code)
+            .exclude(status='CANCELLED')
+        )
+        if any(o.status != 'PENDING' for o in previous):
+            raise serializers.ValidationError({'coupon_code': 'Vous avez déjà utilisé ce code promo.'})
+        active_cutoff = timezone.now() - timedelta(minutes=30)
+        for old in previous:
+            if old.payments.filter(status='PENDING', created_at__gte=active_cutoff).exists():
+                raise serializers.ValidationError({
+                    'coupon_code': "Un paiement est en cours pour une commande utilisant ce code promo. "
+                                   "Patientez quelques minutes ou terminez ce paiement."
+                })
+            old.payments.filter(status='PENDING').update(status='EXPIRED', finalized_at=timezone.now())
+            old.status = 'CANCELLED'
+            old.save()
+            old.release_coupon()
+
     @transaction.atomic
     def create(self, validated_data):
         items_data = validated_data.pop('items')
@@ -154,6 +184,9 @@ class OrderCreateSerializer(serializers.Serializer):
                 coupon = Coupon.objects.select_for_update().get(code=coupon_code)
             except Coupon.DoesNotExist:
                 raise serializers.ValidationError({'coupon_code': 'Code promo invalide.'})
+            # Un code promo s'utilise une seule fois par client.
+            self._release_previous_coupon_use(user, coupon_code)
+            coupon.refresh_from_db()
             error = coupon.validation_error(subtotal=subtotal, user=user)
             if error:
                 raise serializers.ValidationError({'coupon_code': error})
@@ -182,7 +215,7 @@ class OrderCreateSerializer(serializers.Serializer):
             from apps.core.email import send_order_confirmation
             import logging
             logger = logging.getLogger(__name__)
-            logger.info(f"[EMAIL] Envoi confirmation commande #{order.id} a {order.user.email}...")
+            logger.info(f"[EMAIL] Envoi confirmation commande #{order.id} (client #{order.user_id})...")
             result = send_order_confirmation(order)
             logger.info(f"[EMAIL] Resultat: {result}")
         except Exception as e:

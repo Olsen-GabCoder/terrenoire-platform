@@ -22,6 +22,12 @@ from requests.auth import HTTPBasicAuth
 logger = logging.getLogger('bamboo_pay')
 
 
+
+def _mask_numbers(text):
+    """Masque les longues suites de chiffres (téléphones, comptes) dans les journaux."""
+    import re
+    return re.sub(r'\d{6,}', lambda m: m.group()[:2] + '…' + m.group()[-2:], text or '')
+
 class BambooPayError(Exception):
     """Exception levee en cas d'erreur Bamboo Pay."""
     pass
@@ -148,7 +154,7 @@ class BambooPayService:
             raw_body = response.text
             logger.error(
                 "bamboo.initiate_error ref=%s status_http=%d body=%s",
-                reference, response.status_code, raw_body[:500]
+                reference, response.status_code, _mask_numbers(raw_body[:500])
             )
             data = {}
             try:
@@ -227,7 +233,7 @@ class BambooPayService:
 
         logger.error(
             "bamboo.redirect_error billing=%s status_http=%d body=%s",
-            billing_id, response.status_code, response.text[:500]
+            billing_id, response.status_code, _mask_numbers(response.text[:500])
         )
         if response.status_code == 401:
             raise BambooPayError(f"Authentification echouee: {data.get('message', 'Unauthorized')}")

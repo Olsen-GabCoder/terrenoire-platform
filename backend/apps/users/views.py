@@ -64,7 +64,8 @@ class UserRegistrationView(generics.CreateAPIView):
         # car il est enregistré en minuscules).
         from rest_framework_simplejwt.tokens import RefreshToken
         from .jwt_cookie_views import _set_auth_cookies
-        refresh = RefreshToken.for_user(user)
+        from .tokens import add_session_claims
+        refresh = add_session_claims(RefreshToken.for_user(user), user)
         access = str(refresh.access_token)
 
         headers = self.get_success_headers(serializer.data)
@@ -155,11 +156,23 @@ class ChangePasswordView(generics.UpdateAPIView):
         
         # Mettre à jour la session pour éviter la déconnexion
         update_session_auth_hash(request, user)
-        
-        return Response(
-            {'message': 'Mot de passe changé avec succès'},
+
+        # Les anciens jetons sont désormais refusés partout (autres appareils
+        # déconnectés) : cet appareil reçoit une nouvelle paire de jetons.
+        from rest_framework_simplejwt.tokens import RefreshToken
+        from .jwt_cookie_views import _set_auth_cookies
+        from .tokens import add_session_claims
+        refresh = add_session_claims(RefreshToken.for_user(user), user)
+        response = Response(
+            {
+                'message': 'Mot de passe changé avec succès',
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+            },
             status=status.HTTP_200_OK
         )
+        _set_auth_cookies(response, str(refresh.access_token), str(refresh))
+        return response
 
 
 class UserListView(generics.ListAPIView):
@@ -230,11 +243,9 @@ class ForgotPasswordView(APIView):
                     fail_silently=False,
                 )
             except Exception:
+                # Même réponse que pour une adresse inconnue : une erreur 503
+                # réservée aux comptes existants révélerait qui est client.
                 logger.exception("password_reset.email_failed user=%s", user.pk)
-                return Response(
-                    {'message': "Impossible d'envoyer l'email. Réessayez plus tard."},
-                    status=status.HTTP_503_SERVICE_UNAVAILABLE
-                )
 
         return Response({
             'message': "Si un compte existe avec cet email, vous recevrez un lien de réinitialisation."

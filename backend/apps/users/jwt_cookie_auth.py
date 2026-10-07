@@ -53,6 +53,15 @@ class JWTCookieAuthentication(JWTAuthentication):
 
         return None
 
+    def get_user(self, validated_token):
+        user = super().get_user(validated_token)
+        # Jeton émis avant un changement de mot de passe : refusé tout de suite
+        # (sans attendre son expiration).
+        from .tokens import token_matches_password
+        if not token_matches_password(validated_token, user):
+            raise exceptions.AuthenticationFailed('Session expirée : le mot de passe a changé.', code='password_changed')
+        return user
+
     def enforce_origin(self, request):
         if request.method in SAFE_METHODS or settings.DEBUG:
             return

@@ -11,6 +11,11 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
     Sérialiseur personnalisé qui permet de se connecter avec l'email ou le username.
     """
+
+    @classmethod
+    def get_token(cls, user):
+        from .tokens import add_session_claims
+        return add_session_claims(super().get_token(user), user)
     
     def validate(self, attrs):
         # Récupérer l'email ou le username de la requête

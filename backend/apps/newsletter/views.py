@@ -39,6 +39,12 @@ def _send_confirmation_email_async(subscriber):
     run_in_background(_send)
 
 
+NEUTRAL_SUBSCRIBE_MESSAGE = (
+    "Merci ! Si cette adresse n'est pas encore abonnée, un e-mail de confirmation "
+    "vient de vous être envoyé."
+)
+
+
 class NewsletterSubscribeView(APIView):
     """Inscription à la newsletter (double opt-in)."""
     permission_classes = [AllowAny]
@@ -59,12 +65,15 @@ class NewsletterSubscribeView(APIView):
             defaults={'is_active': True, 'confirmed': False},
         )
 
+        # Même réponse qu'une nouvelle inscription : ne pas révéler si une
+        # adresse est déjà abonnée (sinon on peut tester la liste des abonnés).
+        neutral = Response(
+            {'success': True, 'message': NEUTRAL_SUBSCRIBE_MESSAGE},
+            status=status.HTTP_201_CREATED,
+        )
         if not created:
             if subscriber.is_active and subscriber.confirmed:
-                return Response(
-                    {'email': ["Cet email est déjà inscrit à notre newsletter."]},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                return neutral
             # Réactivation ou renvoi de confirmation
             if not subscriber.is_active:
                 subscriber.is_active = True
@@ -77,10 +86,7 @@ class NewsletterSubscribeView(APIView):
 
         _send_confirmation_email_async(subscriber)
 
-        return Response(
-            {'success': True, 'message': 'Un email de confirmation vous a été envoyé. Vérifiez votre boîte de réception.'},
-            status=status.HTTP_201_CREATED,
-        )
+        return neutral
 
 
 class NewsletterConfirmView(APIView):

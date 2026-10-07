@@ -178,7 +178,7 @@ const Footer = ({ minimal = false }) => {
                 </form>
               </div>
               {status === 'success' && (
-                <p className="ft-newsletter-strip__msg ft-newsletter-strip__msg--ok"><i className="fas fa-envelope" /> Un email de confirmation vous a été envoyé. Vérifiez votre boîte de réception.</p>
+                <p className="ft-newsletter-strip__msg ft-newsletter-strip__msg--ok"><i className="fas fa-envelope" /> Merci ! Si cette adresse n&apos;est pas encore abonnée, un e-mail de confirmation vient de vous être envoyé.</p>
               )}
               {status === 'already-subscribed' && (
                 <p className="ft-newsletter-strip__msg ft-newsletter-strip__msg--err"><i className="fas fa-info-circle" /> Cet email est déjà inscrit.</p>

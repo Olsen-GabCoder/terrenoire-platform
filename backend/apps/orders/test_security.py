@@ -355,3 +355,101 @@ class IpDiagnosticTests(APITestCase):
         res = self.client.get('/api/admin/ip-diagnostic/', HTTP_X_FORWARDED_FOR='1.2.3.4, 10.0.0.1')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data['x_forwarded_for_count'], 2)
+
+
+class SessionHardeningTests(APITestCase):
+    """Sessions : jetons courts et invalidés dès que le mot de passe change."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.user = User.objects.create_user(username='sess', email='sess@example.com', password='AncienMdp!2024')
+
+    def _login(self):
+        res = self.client.post('/api/token/', {'username': 'sess@example.com', 'password': 'AncienMdp!2024'}, format='json')
+        self.assertEqual(res.status_code, 200)
+        return res.data['access']
+
+    def test_access_token_lifetime_is_short(self):
+        from django.conf import settings
+        self.assertLessEqual(settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'], timedelta(minutes=30))
+
+    def test_old_access_token_rejected_after_password_change(self):
+        old_access = self._login()
+        other = APIClient()
+        other.credentials(HTTP_AUTHORIZATION=f'Bearer {old_access}')
+        self.assertEqual(other.get('/api/users/me/').status_code, 200)
+
+        # Changement de mot de passe depuis cet appareil
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {old_access}')
+        res = self.client.put('/api/users/me/change-password/', {
+            'old_password': 'AncienMdp!2024', 'new_password': 'NouveauMdp!2025', 'new_password_confirm': 'NouveauMdp!2025',
+        }, format='json')
+        self.assertEqual(res.status_code, 200, res.data)
+        self.assertIn('access', res.data)
+
+        # L'autre appareil (ancien jeton) est déconnecté immédiatement…
+        self.assertEqual(other.get('/api/users/me/').status_code, 401)
+        # …mais cet appareil reste connecté avec le nouveau jeton
+        mine = APIClient()
+        mine.credentials(HTTP_AUTHORIZATION=f"Bearer {res.data['access']}")
+        self.assertEqual(mine.get('/api/users/me/').status_code, 200)
+
+    def test_tokens_without_claim_still_accepted(self):
+        """Jetons émis avant ce changement : acceptés jusqu'à leur expiration (pas de déconnexion massive)."""
+        from rest_framework_simplejwt.tokens import AccessToken
+        legacy = AccessToken.for_user(self.user)
+        c = APIClient()
+        c.credentials(HTTP_AUTHORIZATION=f'Bearer {legacy}')
+        self.assertEqual(c.get('/api/users/me/').status_code, 200)
+
+
+class CouponOncePerCustomerTests(BaseOrderTestCase):
+    """Un code promo : une utilisation par client, sans bloquer celui qui repasse commande."""
+
+    def setUp(self):
+        super().setUp()
+        from django.core.cache import cache
+        cache.clear()
+        from apps.coupons.models import Coupon
+        self.coupon = Coupon.objects.create(code='UNEFOIS', discount_type='fixed', discount_value=500, max_uses=1)
+        self.client.force_authenticate(self.user)
+
+    def _order(self):
+        return self.client.post('/api/orders/', self._order_payload(coupon_code='unefois'), format='json')
+
+    def test_reuse_after_paid_order_is_refused(self):
+        first = self._order()
+        self.assertEqual(first.status_code, 201, first.data)
+        Order.objects.filter(pk=first.data['id']).update(status='PAID')
+        second = self._order()
+        self.assertEqual(second.status_code, 400)
+        self.assertIn('déjà utilisé', str(second.data))
+
+    def test_unpaid_order_is_replaced_and_coupon_kept_available(self):
+        """Paiement échoué, le client repasse commande : l'ancienne est annulée,
+        le code (limité à 1 utilisation) reste utilisable pour la nouvelle."""
+        first = self._order()
+        self.assertEqual(first.status_code, 201, first.data)
+        second = self._order()
+        self.assertEqual(second.status_code, 201, second.data)
+        self.assertEqual(Order.objects.get(pk=first.data['id']).status, 'CANCELLED')
+        self.coupon.refresh_from_db()
+        self.assertEqual(self.coupon.usage_count, 1)
+
+    def test_payment_in_progress_blocks_new_order_with_same_coupon(self):
+        first = self._order()
+        Payment.objects.create(order_id=first.data['id'], transaction_id='TXN-C-1', provider='AIRTEL',
+                               status='PENDING', amount=Decimal('4500'))
+        second = self._order()
+        self.assertEqual(second.status_code, 400)
+        self.assertEqual(Order.objects.get(pk=first.data['id']).status, 'PENDING')
+
+    def test_other_customer_still_limited_by_max_uses(self):
+        self.assertEqual(self._order().status_code, 201)
+        User.objects.filter(pk=self.other.pk).update(first_name='O', last_name='T', address='Rue 2', city='Libreville')
+        self.other.refresh_from_db()
+        self.client.force_authenticate(self.other)
+        res = self.client.post('/api/orders/', self._order_payload(coupon_code='unefois'), format='json')
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('limite', str(res.data))

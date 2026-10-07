@@ -360,6 +360,11 @@ class BambooCallbackTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.order.refresh_from_db()
         self.assertEqual(self.order.status, 'PENDING')
+        # Le renvoi de la même notification (même clé) est traité, pas ignoré
+        response, _ = self._post({**self.payload, 'idempotency_key': 'key-3'})
+        self.assertEqual(response.data['status'], 'success')
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, 'PAID')
 
 
 class CheckStatusRateLimitTests(APITestCase):

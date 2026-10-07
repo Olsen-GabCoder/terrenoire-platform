@@ -182,8 +182,14 @@ class ManuscriptDownloadView(APIView):
         if not content_type:
             content_type = 'application/octet-stream'
 
+        # Téléchargement en pièce jointe (jamais affiché dans le navigateur),
+        # avec la vraie extension du fichier déposé (.pdf, .doc ou .docx)
+        from django.utils.http import content_disposition_header
+        extension = (original_name.rsplit('.', 1)[-1].lower() if '.' in original_name else 'bin')
         response = HttpResponse(file_data, content_type=content_type)
-        safe_title = manuscript.title.replace('"', "'")
-        response['Content-Disposition'] = f'inline; filename="{safe_title}.pdf"'
+        response['Content-Disposition'] = content_disposition_header(
+            as_attachment=True, filename=f"{manuscript.title[:80]}.{extension}",
+        )
+        response['X-Content-Type-Options'] = 'nosniff'
         response['Content-Length'] = len(file_data)
         return response

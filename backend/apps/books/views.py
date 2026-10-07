@@ -877,6 +877,14 @@ class CollectionViewSet(CatalogWritePermissionMixin, viewsets.ModelViewSet):
     ordering_fields = ['name', 'created_at']
     ordering = ['name']
 
+    def get_queryset(self):
+        # Collections désactivées : visibles uniquement des administrateurs
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.is_authenticated and user.is_staff:
+            return qs
+        return qs.filter(is_active=True)
+
     @action(detail=False, methods=['get'], url_path='by-slug/(?P<slug>[^/.]+)')
     def by_slug(self, request, slug=None):
         """GET /api/collections/by-slug/<slug>/ — detail avec livres."""

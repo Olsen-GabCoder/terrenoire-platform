@@ -91,3 +91,39 @@ class ManuscriptSoftDeleteTest(APITestCase):
         response = self.client.get('/api/manuscripts/')
         ids = [m['id'] for m in response.data]
         self.assertNotIn(self.manuscript.id, ids)
+
+
+class ManuscriptFileContentTest(APITestCase):
+    """Le contenu réel du fichier est vérifié, pas seulement l'extension."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+
+    def _payload(self, upload):
+        return {
+            'title': 'Mon Roman', 'author_name': 'Auteur Test', 'email': 'auteur@example.com',
+            'phone_number': '+24177123456', 'genre': 'ROMAN', 'language': 'FR',
+            'description': 'A' * 60, 'terms_accepted': True, 'file': upload,
+        }
+
+    def test_fake_pdf_is_rejected(self):
+        fake = SimpleUploadedFile('roman.pdf', b'<html><script>alert(1)</script></html>', content_type='application/pdf')
+        response = self.client.post('/api/manuscripts/submit/', self._payload(fake))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Manuscript.objects.count(), 0)
+
+    def test_real_docx_is_accepted_by_validation(self):
+        import zipfile
+        from .serializers import _file_content_matches_extension
+        buf = BytesIO()
+        with zipfile.ZipFile(buf, 'w') as z:
+            z.writestr('word/document.xml', '<w:document/>')
+        docx = SimpleUploadedFile('roman.docx', buf.getvalue())
+        self.assertTrue(_file_content_matches_extension(docx))
+        zip_not_word = BytesIO()
+        with zipfile.ZipFile(zip_not_word, 'w') as z:
+            z.writestr('evil.exe', 'x')
+        self.assertFalse(_file_content_matches_extension(SimpleUploadedFile('roman.docx', zip_not_word.getvalue())))
+        self.assertTrue(_file_content_matches_extension(
+            SimpleUploadedFile('roman.doc', b'\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1' + b'0' * 20)))

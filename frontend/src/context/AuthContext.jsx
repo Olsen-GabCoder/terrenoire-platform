@@ -138,7 +138,11 @@ export const AuthProvider = ({ children }) => {
 
   const changePassword = async (passwordData) => {
     try {
-      await authAPI.changePassword(passwordData);
+      const response = await authAPI.changePassword(passwordData);
+      // Les anciens jetons sont révoqués côté serveur : on garde la session de
+      // cet appareil avec la nouvelle paire renvoyée
+      const { access, refresh } = response.data || {};
+      if (access) tokenStorage.setTokens(access, refresh);
       return { success: true };
     } catch (error) {
       console.error('Erreur lors du changement de mot de passe:', error);

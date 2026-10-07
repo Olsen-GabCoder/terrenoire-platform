@@ -4,6 +4,32 @@ from apps.users.phone import normalize_phone
 from .models import Manuscript
 
 
+
+def _file_content_matches_extension(uploaded):
+    """Vérifie la signature (magic bytes) du fichier selon son extension."""
+    import zipfile
+    name = (getattr(uploaded, 'name', '') or '').lower()
+    pos = uploaded.tell() if hasattr(uploaded, 'tell') else 0
+    try:
+        uploaded.seek(0)
+        head = uploaded.read(8)
+        if name.endswith('.pdf'):
+            return head.startswith(b'%PDF-')
+        if name.endswith('.doc'):
+            return head == b'\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1'
+        if name.endswith('.docx'):
+            if not head.startswith(b'PK\x03\x04'):
+                return False
+            uploaded.seek(0)
+            try:
+                with zipfile.ZipFile(uploaded) as z:
+                    return 'word/document.xml' in z.namelist()
+            except zipfile.BadZipFile:
+                return False
+        return False
+    finally:
+        uploaded.seek(pos)
+
 class ManuscriptSerializer(serializers.ModelSerializer):
     """
     Sérialiseur pour la soumission de manuscrits
@@ -64,6 +90,13 @@ class ManuscriptSerializer(serializers.ModelSerializer):
         if content_type and content_type not in allowed_mime_types:
             raise serializers.ValidationError(
                 "Type de fichier non accepte. Seuls les fichiers PDF et Word (.doc, .docx) sont autorises."
+            )
+
+        # Le type déclaré par le navigateur et l'extension se falsifient
+        # facilement : on vérifie aussi le contenu réel du fichier.
+        if not _file_content_matches_extension(value):
+            raise serializers.ValidationError(
+                "Le contenu du fichier ne correspond pas à un document PDF ou Word valide."
             )
 
         return value
