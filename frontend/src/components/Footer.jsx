@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { newsletterAPI } from '../services/api';
 import { TnDivider } from './ui';
+import { APP_VERSION, APP_COMMIT } from '../utils/appVersion';
 import '../styles/Footer.css';
 
 const LOGO_SRC = '/images/logo_terre_noire.png';
@@ -220,6 +221,10 @@ const Footer = ({ minimal = false }) => {
                   <Link to="/privacy">Confidentialité</Link>
                   <span className="ft__legal-sep">·</span>
                   <Link to="/cookies">Cookies</Link>
+                  <span className="ft__legal-sep">·</span>
+                  <span className="ft__version" title={APP_COMMIT ? `Version ${APP_VERSION} (${APP_COMMIT})` : `Version ${APP_VERSION}`}>
+                    v{APP_VERSION}
+                  </span>
                 </div>
               </div>
               {!minimal && (

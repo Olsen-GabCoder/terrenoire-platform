@@ -1,4 +1,5 @@
 import React from 'react';
+import { isChunkLoadError, reloadOnceForNewVersion } from '../utils/appVersion';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -11,6 +12,8 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
+    // Fichier du site introuvable après une mise en ligne : rechargement unique
+    if (isChunkLoadError(error) && reloadOnceForNewVersion()) return;
     console.error('ErrorBoundary caught:', error, info);
   }
 

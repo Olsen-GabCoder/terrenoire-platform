@@ -383,6 +383,14 @@
   font-size: 8px;
 }
 
+/* Numéro de version du site, discret */
+.ft__version {
+  font-family: var(--tn-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--tn-gray-400);
+}
+
 .ft__credit {
   margin-top: 16px;
   display: flex;

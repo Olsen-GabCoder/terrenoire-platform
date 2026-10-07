@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 
 # Render / production : DATABASE_URL (PostgreSQL) fourni par Render
 import dj_database_url
+from .version import APP_VERSION
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -341,7 +342,7 @@ REST_FRAMEWORK = {
 SPECTACULAR_SETTINGS = {
     'TITLE': "API Terre Noire Éditions",
     'DESCRIPTION': "API REST pour la maison d'édition Terre Noire Éditions (livres, commandes, utilisateurs, etc.)",
-    'VERSION': '1.0.0',
+    'VERSION': APP_VERSION,
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
     # En production, la documentation de l'API (schéma, Swagger, ReDoc) n'est

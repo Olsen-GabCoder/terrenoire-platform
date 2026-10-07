@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAdminUser
 
 from apps.users.jwt_cookie_auth import JWTCookieAuthentication
+from .version import APP_VERSION, APP_COMMIT
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -24,7 +25,7 @@ def api_root(request):
     
     return Response({
         'message': 'API Maison d\'Édition - Bienvenue !',
-        'version': '1.0.0',
+        'version': APP_VERSION,
         'endpoints': {
             'authentication': {
                 'login': base_url + 'token/',
@@ -70,6 +71,8 @@ def health_check(request):
     return Response({
         'status': 'healthy',
         'database': 'connected' if db_connected else 'disconnected',
+        'version': APP_VERSION,
+        'commit': APP_COMMIT,
         'timestamp': timezone.now().isoformat(),
     })
 

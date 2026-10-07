@@ -7,6 +7,7 @@ import {
   AdminLoading, AdminError,
 } from '../../components/admin/AdminPrimitives';
 import api from '../../services/api';
+import { APP_VERSION } from '../../utils/appVersion';
 
 const fmtPrice = (n) => Number(n || 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 });
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '--';
@@ -39,17 +40,20 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [apiVersion, setApiVersion] = useState('');
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        const [bRes, oRes, mRes, uRes] = await Promise.allSettled([
+        const [bRes, oRes, mRes, uRes, hRes] = await Promise.allSettled([
           api.get('/books/statistics/'),
           api.get('/orders/', { params: { page_size: 50 } }),
           api.get('/manuscripts/'),
           api.get('/users/'),
+          api.get('/health/'),
         ]);
+        if (hRes.status === 'fulfilled') setApiVersion(hRes.value.data?.version || '');
         if (bRes.status === 'fulfilled') setBookStats(bRes.value.data);
         if (oRes.status === 'fulfilled') setOrders(oRes.value.data.results || oRes.value.data || []);
         if (mRes.status === 'fulfilled') setManuscripts(mRes.value.data.results || mRes.value.data || []);
@@ -142,7 +146,12 @@ const AdminDashboard = () => {
           </div>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
             <PulseDot />
-            <span style={{ fontSize: 12, color: 'var(--tn-gray-400)' }}>API en ligne</span>
+            <span style={{ fontSize: 12, color: 'var(--tn-gray-400)' }}>
+              API en ligne
+              <span style={{ display: 'block', fontFamily: 'var(--tn-mono)', fontSize: 11, marginTop: 2 }}>
+                Site v{APP_VERSION}{apiVersion ? ` · API v${apiVersion}` : ''}
+              </span>
+            </span>
           </div>
         </div>
 

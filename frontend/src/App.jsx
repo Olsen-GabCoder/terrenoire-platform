@@ -71,6 +71,7 @@ const BadgeShowcase = import.meta.env.DEV ? lazy(() => import('./pages/_dev/Badg
 const AtomicsShowcase = import.meta.env.DEV ? lazy(() => import('./pages/_dev/AtomicsShowcase')) : null;
 
 import BottomNav from './components/BottomNav';
+import UpdateBanner from './components/UpdateBanner';
 import { ToastProvider } from './components/ui/ToastProvider';
 import './App.css';
 
@@ -200,6 +201,7 @@ function AppContent() {
       {/* Pendant la commande et le paiement : pied de page réduit, sans distraction */}
       {!isAdminRoute && !isReaderPage && <Footer minimal={location.pathname.startsWith('/checkout')} />}
       {!isAdminRoute && !isReaderPage && <BottomNav />}
+      <UpdateBanner />
     </div>
   );
 }

@@ -1,0 +1,87 @@
+/* Bandeau « nouvelle version disponible » */
+.tn-update {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  padding: 10px 10px 10px 16px;
+  background: var(--tn-black, #0e0d0b);
+  color: var(--tn-cream, #f8f5ef);
+  border: 1px solid rgba(232, 96, 28, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  font-family: var(--tn-sans, 'Inter', sans-serif);
+  animation: tn-update-in 0.3s ease-out;
+}
+
+.tn-update__icon {
+  color: var(--tn-orange-bright, #E8601C);
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.tn-update__text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.35;
+  min-width: 0;
+}
+
+.tn-update__reload {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-sm, 8px);
+  background: var(--tn-orange, #C24E14);
+  color: #fff;
+  font: 600 14px/1 var(--tn-sans, 'Inter', sans-serif);
+  cursor: pointer;
+}
+
+.tn-update__reload:hover { background: var(--tn-orange-hover, #A94411); }
+
+.tn-update__close {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--radius-sm, 8px);
+  background: transparent;
+  color: var(--tn-gray-400, #9a958c);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.tn-update__close:hover { color: var(--tn-cream, #f8f5ef); }
+
+.tn-update__reload:focus-visible,
+.tn-update__close:focus-visible {
+  outline: 2px solid var(--tn-orange-bright, #E8601C);
+  outline-offset: 2px;
+}
+
+/* Au-dessus de la barre de navigation du bas sur mobile */
+@media (max-width: 768px) {
+  .tn-update {
+    bottom: calc(var(--tn-bottom-nav-h, 64px) + 12px);
+    gap: 10px;
+  }
+  .tn-update__text { font-size: 13px; }
+}
+
+@keyframes tn-update-in {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tn-update { animation: none; }
+}
