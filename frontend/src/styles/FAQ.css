@@ -102,3 +102,23 @@
   .faq-hero__orb { animation: none !important; }
   .faq-item__body { transition: none; }
 }
+
+/* Mobile : catégories sur une seule ligne défilante (au lieu de 6 rangées) */
+@media (max-width: 640px) {
+  .faq-cats {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0 -1.5rem 24px;
+    padding: 0 1.5rem 16px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+  .faq-cats::-webkit-scrollbar { display: none; }
+  .faq-cat {
+    flex-shrink: 0;
+    min-height: 40px;
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
+}

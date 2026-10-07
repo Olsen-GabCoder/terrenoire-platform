@@ -237,3 +237,8 @@
   .authd-books__title { font-size: 26px; }
   .authd-books__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 }
+
+/* Tablette : même taille de cartes que le catalogue (2 colonnes en dessous de 480px) */
+@media (min-width: 481px) and (max-width: 1024px) {
+  .authd-books__grid { grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr)); gap: 14px; }
+}

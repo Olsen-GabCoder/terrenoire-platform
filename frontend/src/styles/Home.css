@@ -970,3 +970,16 @@
   .home-genres__tab { min-height: 44px; padding: 10px 16px; font-size: 13px; }
   .home-hero-stat__label { font-size: 11px; }
 }
+
+/* Sélection de la maison : 8 livres = 2 rangées pleines de 4 sur ordinateur,
+   2 colonnes sur mobile (6 livres affichés, rangées pleines) */
+@media (min-width: 700px) {
+  /* Toutes les grilles de l'accueil : 4 colonnes, comme le catalogue */
+  .home-books-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 699px) {
+  .home-books-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 599px) {
+  .home-books-grid--featured > :nth-child(n + 7) { display: none; }
+}

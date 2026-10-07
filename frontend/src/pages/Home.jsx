@@ -302,8 +302,8 @@ const Home = () => {
               </Link>
             </div>
             <p className="home-epigraph">« Chaque livre est un seuil. Voici quelques portes. »</p>
-            <div className="home-books-grid">
-              {featured.slice(0, 6).map((book, i) => (
+            <div className="home-books-grid home-books-grid--featured">
+              {featured.slice(0, 8).map((book, i) => (
                 <div key={book.id} className="home-stagger-item" style={{ animationDelay: `${i * 80}ms` }}>
                   <BookCard book={book}  />
                 </div>
@@ -427,7 +427,7 @@ const Home = () => {
               </Link>
             </div>
             <p className="home-epigraph">« L'encre est fraîche, les histoires impatientes. »</p>
-            <div className="home-books-grid">
+            <div className="home-books-grid home-books-grid--featured">
               {newReleases.slice(0, 8).map((book, i) => (
                 <div key={book.id} className="home-stagger-item" style={{ animationDelay: `${i * 80}ms` }}>
                   <BookCard book={book}  />

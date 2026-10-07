@@ -45,6 +45,9 @@ from .serializers import (
 from .models import Collection
 from apps.core.email import run_in_background
 
+# Nombre de livres de la « Sélection de la maison » (accueil)
+FEATURED_SELECTION_SIZE = 8
+
 
 @xframe_options_exempt
 @require_GET
@@ -342,7 +345,8 @@ class BookViewSet(CatalogWritePermissionMixin, viewsets.ModelViewSet):
             self.get_queryset().filter(available=True),
             source=config.selection_source,
             period=period,
-            size=6,
+            # 8 = deux rangées pleines de 4 sur ordinateur (2 colonnes sur mobile)
+            size=FEATURED_SELECTION_SIZE,
         )
         data = BookListSerializer(featured, many=True, context={'request': request}).data
         cache.set(cache_key, {'period': period, 'data': data}, getattr(settings, 'CACHE_BOOKS_TTL', 300))

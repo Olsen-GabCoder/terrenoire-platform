@@ -80,7 +80,8 @@ class RotatingSelectionTests(APITestCase):
         same_day = day1 + timedelta(hours=5)
         next_day = day1 + timedelta(days=1)
         first = self._ids_at(day1)
-        self.assertEqual(len(first), 6)
+        from apps.books.views import FEATURED_SELECTION_SIZE
+        self.assertEqual(len(first), FEATURED_SELECTION_SIZE)
         self.assertEqual(first, self._ids_at(same_day))
         self.assertNotEqual(first, self._ids_at(next_day))
 
