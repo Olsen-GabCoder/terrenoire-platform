@@ -86,7 +86,7 @@
 .cat-hero__stat-label {
   display: block;
   font-family: var(--tn-mono);
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   margin-top: 4px;
@@ -643,3 +643,11 @@
 .cat-hero__search input { -webkit-appearance: none; appearance: none; }
 .cat-hero__search input::-webkit-search-cancel-button,
 .cat-hero__search input::-webkit-search-decoration { display: none; }
+
+/* ── Lisibilité et cibles tactiles (filtres) ── */
+.cat-filters__label { font-size: 11px; }
+@media (max-width: 768px) {
+  .cat-filters__pill { min-height: 44px; }
+  .cat-filters__toggle { min-height: 40px; font-size: 13px; }
+  .cat-hero__stat-label { font-size: 10px; }
+}

@@ -1124,3 +1124,26 @@
 @media (max-width: 768px) {
   .ft--minimal .ft__main { padding: 4px 16px 20px; }
 }
+
+/* ── Mobile : pied de page compact ── */
+@media (max-width: 600px) {
+  .ft__citation { padding: 40px 20px 8px; }
+  .ft-brand { padding-bottom: 20px; }
+  .ft-brand__desc { display: none; }
+  /* Services : liens en grille 2 colonnes, cibles de 44px */
+  .ft-links {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 12px;
+  }
+  .ft-links a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0;
+    font-size: 14px;
+  }
+  .ft-contact { gap: 0; }
+  .ft-contact__row { min-height: 44px; align-items: center; }
+  .ft__colophon { display: none; }
+}

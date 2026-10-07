@@ -328,7 +328,7 @@
 
 .crt-card__unit {
   font-size: 0.75rem;
-  color: var(--color-gray-400);
+  color: var(--color-gray-500);
 }
 
 .crt-card__price strong {
@@ -339,7 +339,7 @@
 
 .crt-card__old-price {
   font-size: 0.75rem;
-  color: var(--tn-gray-400);
+  color: var(--tn-gray-500);
   text-decoration: line-through;
 }
 

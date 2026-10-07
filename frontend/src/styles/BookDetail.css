@@ -1395,3 +1395,4 @@
     bottom: calc(var(--tn-bottom-nav-h, 64px) + 80px);
   }
 }
+.bd-wishlist { min-height: 44px; }

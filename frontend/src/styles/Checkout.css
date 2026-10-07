@@ -297,7 +297,7 @@
 .chk-item-old-price {
   font-size: 0.7rem;
   font-weight: 500;
-  color: var(--tn-gray-400);
+  color: var(--tn-gray-500);
   text-decoration: line-through;
 }
 
@@ -420,7 +420,7 @@
   display: flex; align-items: center; gap: 0.5rem;
 }
 .chk-pay__badge {
-  font-size: 0.625rem; font-weight: 600;
+  font-size: 0.6875rem; font-weight: 600;
   letter-spacing: 0.05em; text-transform: uppercase;
   padding: 0.15rem 0.4rem; border-radius: 4px;
   background: rgba(232, 96, 28, 0.08); color: var(--color-primary);
@@ -535,7 +535,7 @@
   }
 
   .chk-pay__badge {
-    font-size: 0.625rem;
+    font-size: 0.6875rem;
     padding: 0.1rem 0.3rem;
   }
 

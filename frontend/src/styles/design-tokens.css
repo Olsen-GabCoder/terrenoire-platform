@@ -475,13 +475,18 @@
 .tn-field__icon--top { top: 14px; transform: none; }
 .tn-field__toggle {
   position: absolute;
-  right: 14px;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  /* zone de toucher 40×40 (l'icône reste petite) */
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 0;
   color: var(--ds-gray-500);
   font-size: 0.9375rem;
   display: flex;
@@ -523,7 +528,7 @@
 
 /* Solid variants (default style) */
 .tn-badge--promo   { background: var(--ds-orange); color: var(--ds-white); }
-.tn-badge--new     { background: var(--ds-gold-dark); color: var(--ds-white); }
+.tn-badge--new     { background: #8A5F37; color: var(--ds-white); } /* or foncé : 5,3:1 avec le blanc */
 .tn-badge--success { background: var(--ds-success); color: var(--ds-white); }
 .tn-badge--warning { background: #D97706; color: var(--ds-white); }
 .tn-badge--danger  { background: var(--ds-error); color: var(--ds-white); }
@@ -703,7 +708,7 @@
   margin-left: 6px;
 }
 .tn-stars__count {
-  font-size: 0.85em; color: var(--ds-gray-400); font-weight: 500;
+  font-size: 0.85em; color: var(--ds-gray-500); font-weight: 500;
 }
 
 /* Interactive */
@@ -763,7 +768,7 @@
 /* Strike (old price) */
 .tn-price--strike,
 .tn-price__strike /* legacy alias */ {
-  text-decoration: line-through; color: var(--ds-gray-400);
+  text-decoration: line-through; color: var(--ds-gray-500);
   font-family: var(--ds-sans); font-weight: 500;
 }
 .tn-price__strike-currency {

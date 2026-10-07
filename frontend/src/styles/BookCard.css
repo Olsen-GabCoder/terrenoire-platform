@@ -380,7 +380,7 @@
     font-size: 16px;
   }
   .tn-book-card__footer .tn-price__currency {
-    font-size: 9px;
+    font-size: 10.5px;
   }
   .tn-book-card__footer .tn-price--strike {
     font-size: 11px;
@@ -435,7 +435,7 @@
 }
 .tn-book-card__format-name i { margin-right: 0; }
 @media (max-width: 480px) {
-  .tn-book-card__pill-cat { display: none; }
+  .tn-book-card__meta .tn-book-card__pill-cat { display: none; }
   .tn-book-card__formats { gap: 6px; }
   .tn-book-card__format {
     flex-direction: column;
@@ -447,3 +447,16 @@
   .tn-book-card__format-price { font-size: 12px; color: var(--tn-gray-700); }
   .tn-book-card__formats-cancel { min-height: 32px; }
 }
+
+/* ── Lisibilité mobile : rien sous 11px, cibles confortables ── */
+@media (max-width: 480px) {
+  .tn-book-card__meta .tn-pill {
+    font-size: 10.5px;
+    padding: 3px 7px;
+  }
+  .tn-book-card__rating-row,
+  .tn-book-card__rating-row .tn-stars { font-size: 11px; }
+  .tn-book-card__rating-row .tn-stars__count { font-size: 11px; }
+  .tn-book-card__author { font-size: 12px; }
+}
+.tn-book-card__excerpt { min-height: 40px; }
