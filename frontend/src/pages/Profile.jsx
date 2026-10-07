@@ -6,6 +6,15 @@ import { formatPhoneDisplay, formatPhoneTyping, phoneForInput, phoneForApi, vali
 import '../styles/Profile.css';
 import TnBookCover from '../components/ui/TnBookCover';
 
+const STATUS = {
+  PENDING: { key: 'pending', label: 'En attente' },
+  PAID: { key: 'paid', label: 'Payée' },
+  SHIPPED: { key: 'shipped', label: 'Expédiée' },
+  CANCELLED: { key: 'cancelled', label: 'Annulée' },
+};
+
+const formatShortDate = (value) => new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+
 const Profile = () => {
   const { user, authChecked, logout, updateProfile } = useAuth();
   const navigate = useNavigate();
@@ -14,7 +23,6 @@ const Profile = () => {
   const fromCheckout = location.state?.from === '/checkout';
   const messageRef = useRef(null);
 
-  const [activeTab, setActiveTab] = useState('info');
   const [isEditing, setIsEditing] = useState(fromCheckout);
   const [fieldErrors, setFieldErrors] = useState({});
   const [formData, setFormData] = useState({
@@ -176,31 +184,6 @@ const Profile = () => {
     }).format(price) + ' FCFA';
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      PENDING: { label: 'En attente', color: '#f59e0b' },
-      PAID: { label: 'Payé', color: '#10b981' },
-      SHIPPED: { label: 'Expédié', color: '#3b82f6' },
-      CANCELLED: { label: 'Annulé', color: '#ef4444' },
-    };
-    const config = statusConfig[status] || statusConfig.PENDING;
-    return (
-      <span className="status-badge" style={{ backgroundColor: config.color }}>
-        {config.label}
-      </span>
-    );
-  };
-
   const totalSpent = useMemo(() => {
     // Seules les commandes payées comptent dans le total dépensé
     return orders
@@ -215,6 +198,46 @@ const Profile = () => {
   const displayName = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.username || 'Utilisateur';
   const initials = (user?.first_name?.charAt(0) || '') + (user?.last_name?.charAt(0) || '') || (user?.username?.charAt(0) || 'U');
 
+  // Ma bibliothèque : ebooks des commandes payées (sans doublon)
+  const ebooks = useMemo(() => {
+    const seen = new Set();
+    const list = [];
+    orders
+      .filter((o) => o.status === 'PAID' || o.status === 'SHIPPED')
+      .forEach((o) => (o.items || []).forEach((item) => {
+        if (item.format_purchased === 'EBOOK' && item.book && !seen.has(item.book.id)) {
+          seen.add(item.book.id);
+          list.push(item.book);
+        }
+      }));
+    return list;
+  }, [orders]);
+
+  const recentOrders = orders.slice(0, 3);
+
+  // Ce qui manque pour pouvoir commander (le serveur exige nom + téléphone,
+  // et adresse + ville pour un livre papier)
+  const missing = [
+    !user?.first_name || !user?.last_name ? 'vos nom et prénom' : null,
+    !user?.phone_number ? 'votre téléphone' : null,
+    !user?.address || !user?.city ? 'votre adresse (pour les livres papier)' : null,
+  ].filter(Boolean);
+
+  const infoCardRef = useRef(null);
+  // Arrivée depuis la commande : aller directement au formulaire
+  useEffect(() => {
+    if (fromCheckout && user) {
+      const t = setTimeout(() => infoCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+      return () => clearTimeout(t);
+    }
+    return undefined;
+  }, [fromCheckout, user]);
+  const startEditing = () => {
+    setMessage({ type: '', text: '' });
+    setIsEditing(true);
+    setTimeout(() => infoCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  };
+
   if (!user) {
     return null;
   }
@@ -228,21 +251,25 @@ const Profile = () => {
         <div className={`profile-hero-inner ${heroReady ? 'is-ready' : ''}`}>
           <div className="profile-hero-photo-wrap">
             <div className="profile-hero-avatar-wrap">
-              <label className={`profile-hero-avatar profile-hero-avatar--editable ${avatarLoading ? 'is-loading' : ''}`} htmlFor="profile-avatar-input">
+              <label
+                className={`profile-hero-avatar profile-hero-avatar--editable ${avatarLoading ? 'is-loading' : ''}`}
+                htmlFor="profile-avatar-input"
+                aria-label="Changer la photo de profil"
+              >
                 {user.profile_image ? (
                   <img src={user.profile_image} alt="" className="profile-hero-avatar-img" />
                 ) : (
                   <span className="profile-hero-avatar-initials">{initials.toUpperCase()}</span>
                 )}
-                {avatarLoading ? (
+                {avatarLoading && (
                   <span className="profile-hero-avatar-overlay">
                     <i className="fas fa-spinner fa-spin" />
                   </span>
-                ) : (
-                  <span className="profile-hero-avatar-overlay">
-                    <i className="fas fa-camera" /> Changer
-                  </span>
                 )}
+              </label>
+              {/* Badge appareil photo : visible en permanence (pas de survol sur mobile) */}
+              <label htmlFor="profile-avatar-input" className="pf-avatar-badge" aria-hidden="true">
+                <i className="fas fa-camera" />
               </label>
               <input
                 id="profile-avatar-input"
@@ -252,212 +279,182 @@ const Profile = () => {
                 onChange={handleAvatarChange}
                 disabled={avatarLoading}
               />
-              <span className="profile-hero-status-dot" title="Connecté" aria-hidden="true" />
             </div>
           </div>
-          <div className="profile-hero-line" />
           <h1 className="profile-hero-title">{displayName}</h1>
           <p className="profile-hero-email">{user.email}</p>
-          {memberSince && (
-            <p className="profile-hero-since">Membre depuis {memberSince}</p>
-          )}
+          {memberSince && <p className="profile-hero-since">Membre depuis {memberSince}</p>}
         </div>
       </section>
       <div className="tn-motif-strip" style={{ opacity: 0.6 }} aria-hidden="true" />
 
-      <section className="profile-content-section">
-        <div className="profile-content-inner">
-          <div className="profile-sidebar">
-          {/* Stats */}
-          <div className="profile-stats">
-            <div className="profile-stat-card">
-              <div className="profile-stat-icon profile-stat-icon--orders">
-                <i className="fas fa-shopping-bag" />
-              </div>
-              <div className="profile-stat-body">
-                <span className="profile-stat-value">{orders.length}</span>
-                <span className="profile-stat-label">Commandes</span>
-              </div>
+      <section className="pf-body">
+        <div className="pf-wrap">
+          {fromCheckout && isEditing && (
+            <div className="message info" role="status">
+              Complétez vos coordonnées pour finaliser votre commande : vous reviendrez au paiement juste après.
             </div>
-            <div className="profile-stat-card">
-              <div className="profile-stat-icon profile-stat-icon--revenue">
-                <i className="fas fa-coins" />
-              </div>
-              <div className="profile-stat-body">
-                <span className="profile-stat-value">{formatPrice(totalSpent)}</span>
-                <span className="profile-stat-label">Total dépensé</span>
-              </div>
+          )}
+          {message.text && (
+            <div className={`message ${message.type}`} role="alert" ref={messageRef}>
+              {message.text}
             </div>
-            <div className="profile-stat-card">
-              <div className="profile-stat-icon profile-stat-icon--calendar">
-                <i className="fas fa-calendar-check" />
-              </div>
-              <div className="profile-stat-body">
-                <span className="profile-stat-value">{memberSince || '—'}</span>
-                <span className="profile-stat-label">Membre depuis</span>
-              </div>
+          )}
+          {!isEditing && missing.length > 0 && (
+            <div className="pf-alert" role="status">
+              <i className="fas fa-circle-exclamation" aria-hidden="true" />
+              <p>
+                <strong>Profil à compléter.</strong> Ajoutez {missing.join(', ')} pour pouvoir commander.
+              </p>
+              <button type="button" className="pf-alert__btn" onClick={startEditing}>Compléter</button>
             </div>
-          </div>
+          )}
 
-          {/* Raccourcis */}
-          <div className="profile-quick-links">
-            <h3 className="profile-section-heading">Accès rapides</h3>
-            <div className="profile-quick-links-grid">
-              <Link to="/catalog" className="profile-quick-link">
-                <i className="fas fa-book-open" />
-                <span>Catalogue</span>
-              </Link>
-              <Link to="/submit-manuscript" className="profile-quick-link">
-                <i className="fas fa-pen-nib" />
-                <span>Soumettre un manuscrit</span>
-              </Link>
-              <Link to="/cart" className="profile-quick-link">
-                <i className="fas fa-shopping-cart" />
-                <span>Panier</span>
-              </Link>
-              <button
-                type="button"
-                className="profile-quick-link profile-quick-link--btn"
-                onClick={() => setActiveTab('orders')}
-              >
-                <i className="fas fa-box" />
-                <span>Mes commandes</span>
-              </button>
-            </div>
-          </div>
-          </div>
+          <div className="pf-layout">
+            <div className="pf-col pf-col--side">
+              {/* ── Chiffres ── */}
+              <div className="pf-stats">
+                <div className="pf-stat">
+                  <span className="pf-stat__value">{orders.length}</span>
+                  <span className="pf-stat__label">commande{orders.length > 1 ? 's' : ''}</span>
+                </div>
+                <div className="pf-stat">
+                  <span className="pf-stat__value">{formatPrice(totalSpent)}</span>
+                  <span className="pf-stat__label">dépensés</span>
+                </div>
+                <div className="pf-stat">
+                  <span className="pf-stat__value">{ebooks.length}</span>
+                  <span className="pf-stat__label">ebook{ebooks.length > 1 ? 's' : ''}</span>
+                </div>
+              </div>
 
-          <div className="profile-card">
-            <div className="profile-tabs">
-          <button
-            className={`tab-button ${activeTab === 'info' ? 'active' : ''}`}
-            onClick={() => setActiveTab('info')}
-          >
-            <i className="fas fa-user"></i>
-            <span>Informations</span>
-          </button>
-          <button
-            className={`tab-button ${activeTab === 'orders' ? 'active' : ''}`}
-            onClick={() => setActiveTab('orders')}
-          >
-            <i className="fas fa-shopping-bag"></i>
-            <span>Mes Commandes</span>
-            {orders.length > 0 && (
-              <span className="tab-badge">{orders.length}</span>
-            )}
-          </button>
-        </div>
-
-        {/* Message de statut */}
-        {fromCheckout && isEditing && (
-          <div className="message info" role="status">
-            Complétez vos coordonnées pour finaliser votre commande : vous reviendrez au paiement juste après.
-          </div>
-        )}
-        {message.text && (
-          <div className={`message ${message.type}`} role="alert" ref={messageRef}>
-            {message.text}
-          </div>
-        )}
-
-        <div className="profile-content">
-          {/* ONGLET INFORMATIONS */}
-          {activeTab === 'info' && (
-            <>
-              {!isEditing ? (
-                <>
-                  <div className="profile-info">
-                    <div className="profile-section">
-                      <h3>Identité</h3>
-                      <div className="info-grid">
-                        <div className="info-item">
-                          <span className="info-label">Prénom</span>
-                          <span className="info-value">{user.first_name || '—'}</span>
-                        </div>
-                        <div className="info-item">
-                          <span className="info-label">Nom</span>
-                          <span className="info-value">{user.last_name || '—'}</span>
-                        </div>
-                        {user.username && (
-                          <div className="info-item">
-                            <span className="info-label">Nom d'utilisateur</span>
-                            <span className="info-value">{user.username}</span>
-                          </div>
-                        )}
-                        <div className="info-item">
-                          <span className="info-label">Email (identifiant de connexion)</span>
-                          <span className="info-value">{user.email}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="profile-section">
-                      <h3>Coordonnées</h3>
-                      <div className="info-grid">
-                        <div className="info-item">
-                          <span className="info-label">Téléphone</span>
-                          <span className="info-value">{user.phone_number ? formatPhoneDisplay(user.phone_number) : 'Non renseigné'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="profile-section">
-                      <h3>Adresse de livraison</h3>
-                      <div className="info-grid">
-                        <div className="info-item info-item--full">
-                          <span className="info-label">Adresse</span>
-                          <span className="info-value">{user.address || 'Non renseignée'}</span>
-                        </div>
-                        <div className="info-item">
-                          <span className="info-label">Ville</span>
-                          <span className="info-value">{user.city || 'Non renseignée'}</span>
-                        </div>
-                        <div className="info-item">
-                          <span className="info-label">Pays</span>
-                          <span className="info-value">{user.country || 'Non renseigné'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="profile-section">
-                      <h3>Préférences & compte</h3>
-                      <div className="info-grid">
-                        <div className="info-item">
-                          <span className="info-label">Newsletter</span>
-                          <span className="info-value">
-                            {user.receive_newsletter ? 'Oui, abonné(e)' : 'Non abonné(e)'}
-                          </span>
-                        </div>
-                        <div className="info-item">
-                          <span className="info-label">Inscription</span>
-                          <span className="info-value">
-                            {user.date_joined
-                              ? new Date(user.date_joined).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-                              : '—'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+              {/* ── Ma bibliothèque ── */}
+              <section className="pf-card" aria-labelledby="pf-library-title">
+                <div className="pf-card__head">
+                  <h2 id="pf-library-title" className="pf-card__title">Ma <em>bibliothèque</em></h2>
+                </div>
+                {loadingOrders && orders.length === 0 ? (
+                  <p className="pf-muted"><i className="fas fa-spinner fa-spin" aria-hidden="true" /> Chargement…</p>
+                ) : ebooks.length === 0 ? (
+                  <div className="pf-empty">
+                    <p>Vos ebooks achetés apparaîtront ici, prêts à être lus.</p>
+                    <Link to="/catalog" className="pf-link">Découvrir le catalogue <i className="fas fa-arrow-right" aria-hidden="true" /></Link>
                   </div>
+                ) : (
+                  <ul className="pf-library">
+                    {ebooks.map((book) => (
+                      <li key={book.id} className="pf-library__item">
+                        <span className="pf-library__cover">
+                          {book.cover_image
+                            ? <img src={book.cover_image} alt="" loading="lazy" decoding="async" />
+                            : <TnBookCover book={book} variant="compact" />}
+                        </span>
+                        <span className="pf-library__text">
+                          <span className="pf-library__title">{book.title}</span>
+                          {book.author?.full_name && <span className="pf-library__author">{book.author.full_name}</span>}
+                        </span>
+                        <Link to={`/books/${book.id}/read`} className="tn-btn tn-btn--primary tn-btn--sm pf-library__read">
+                          <i className="fas fa-book-open-reader" aria-hidden="true" /> Lire
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
 
-                  <div className="profile-actions">
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      onClick={() => setIsEditing(true)}
-                    >
-                      Modifier le profil
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-logout"
-                      onClick={handleLogout}
-                    >
-                      Se déconnecter
-                    </button>
+              {/* ── Commandes récentes ── */}
+              <section className="pf-card" aria-labelledby="pf-orders-title">
+                <div className="pf-card__head">
+                  <h2 id="pf-orders-title" className="pf-card__title">Commandes <em>récentes</em></h2>
+                </div>
+                {loadingOrders && orders.length === 0 ? (
+                  <p className="pf-muted"><i className="fas fa-spinner fa-spin" aria-hidden="true" /> Chargement…</p>
+                ) : recentOrders.length === 0 ? (
+                  <div className="pf-empty">
+                    <p>Vous n&apos;avez pas encore passé de commande.</p>
+                    <Link to="/catalog" className="pf-link">Découvrir le catalogue <i className="fas fa-arrow-right" aria-hidden="true" /></Link>
                   </div>
-                </>
-              ) : (
+                ) : (
+                  <>
+                    <ul className="pf-orders">
+                      {recentOrders.map((order) => {
+                        const st = STATUS[order.status] || STATUS.PENDING;
+                        const count = (order.items || []).reduce((n, it) => n + (it.quantity || 1), 0);
+                        return (
+                          <li key={order.id}>
+                            <Link to="/orders" className="pf-order">
+                              <span className="pf-order__main">
+                                <span className="pf-order__id">Commande #{order.id}</span>
+                                <span className="pf-order__meta">
+                                  {formatShortDate(order.created_at)} · {count} article{count > 1 ? 's' : ''}
+                                </span>
+                              </span>
+                              <span className="pf-order__side">
+                                <span className={`pf-status pf-status--${st.key}`}>{st.label}</span>
+                                <span className="pf-order__total">{formatPrice(order.total_amount)}</span>
+                              </span>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <Link to="/orders" className="pf-link pf-link--block">
+                      Voir toutes mes commandes <i className="fas fa-arrow-right" aria-hidden="true" />
+                    </Link>
+                  </>
+                )}
+              </section>
+            </div>
+
+            <div className="pf-col pf-col--main">
+              {/* ── Mes informations ── */}
+              <section className="pf-card" ref={infoCardRef} aria-labelledby="pf-info-title">
+                <div className="pf-card__head">
+                  <h2 id="pf-info-title" className="pf-card__title">Mes <em>informations</em></h2>
+                  {!isEditing && (
+                    <button type="button" className="pf-edit-btn" onClick={startEditing}>
+                      <i className="fas fa-pen" aria-hidden="true" /> Modifier
+                    </button>
+                  )}
+                </div>
+
+                {!isEditing ? (
+                  <dl className="pf-info">
+                    <div className="pf-info__row">
+                      <dt>Nom</dt>
+                      <dd>{[user.first_name, user.last_name].filter(Boolean).join(' ') || <span className="pf-missing">À renseigner</span>}</dd>
+                    </div>
+                    <div className="pf-info__row">
+                      <dt>E-mail</dt>
+                      <dd>{user.email}</dd>
+                    </div>
+                    {user.username && (
+                      <div className="pf-info__row">
+                        <dt>Identifiant</dt>
+                        <dd>{user.username}</dd>
+                      </div>
+                    )}
+                    <div className="pf-info__row">
+                      <dt>Téléphone</dt>
+                      <dd>{user.phone_number ? formatPhoneDisplay(user.phone_number) : <span className="pf-missing">À renseigner</span>}</dd>
+                    </div>
+                    <div className="pf-info__row">
+                      <dt>Adresse</dt>
+                      <dd>
+                        {user.address || user.city ? (
+                          <>
+                            {user.address && <span className="pf-info__line">{user.address}</span>}
+                            <span className="pf-info__line">{[user.city, user.country].filter(Boolean).join(', ')}</span>
+                          </>
+                        ) : <span className="pf-missing">À renseigner</span>}
+                      </dd>
+                    </div>
+                    <div className="pf-info__row">
+                      <dt>Newsletter</dt>
+                      <dd>{user.receive_newsletter ? 'Abonné(e)' : 'Non abonné(e)'}</dd>
+                    </div>
+                  </dl>
+                ) : (
                 <form onSubmit={handleSubmit} className="profile-form">
                   <div className="form-grid">
                     <div className="form-group">
@@ -583,92 +580,31 @@ const Profile = () => {
                     <button
                       type="button"
                       className="btn-secondary"
-                      onClick={() => setIsEditing(false)}
+                      onClick={() => { setIsEditing(false); setFieldErrors({}); }}
                       disabled={loading}
                     >
                       Annuler
                     </button>
                   </div>
                 </form>
-              )}
-            </>
-          )}
+                )}
+              </section>
 
-          {/* ONGLET COMMANDES */}
-          {activeTab === 'orders' && (
-            <div className="orders-section">
-              {loadingOrders ? (
-                <div className="loading-container">
-                  <i className="fas fa-spinner fa-spin"></i>
-                  <p>Chargement de vos commandes...</p>
+              {/* ── Compte ── */}
+              <section className="pf-card" aria-labelledby="pf-account-title">
+                <div className="pf-card__head">
+                  <h2 id="pf-account-title" className="pf-card__title">Compte</h2>
                 </div>
-              ) : orders.length === 0 ? (
-                <div className="empty-orders">
-                  <i className="fas fa-shopping-bag"></i>
-                  <h3>Aucune commande</h3>
-                  <p>Vous n'avez pas encore passé de commande.</p>
-                  <button
-                    className="btn-primary"
-                    onClick={() => navigate('/catalog')}
-                  >
-                    Découvrir le catalogue
-                  </button>
-                </div>
-              ) : (
-                <div className="orders-list">
-                  {orders.map((order) => (
-                    <div key={order.id} className="order-card">
-                      <div className="order-header">
-                        <div className="order-info">
-                          <h4>Commande #{order.id}</h4>
-                          <p className="order-date">
-                            <i className="far fa-calendar"></i>
-                            {formatDate(order.created_at)}
-                          </p>
-                        </div>
-                        {getStatusBadge(order.status)}
-                      </div>
-
-                      <div className="order-items">
-                        {order.items.map((item) => (
-                          <div key={item.id} className="order-item">
-                            {item.book.cover_image ? (
-                              <img src={item.book.cover_image} alt="" loading="lazy" decoding="async" />
-                            ) : (
-                              <span className="order-item__cover"><TnBookCover book={item.book} variant="compact" /></span>
-                            )}
-                            <div className="item-details">
-                              <h5>{item.book.title}</h5>
-                              <p>{item.book.author?.full_name}</p>
-                              <span className="item-quantity">Quantité : {item.quantity}</span>
-                            </div>
-                            <div className="item-price">
-                              {formatPrice(item.price * item.quantity)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="order-footer">
-                        <div className="order-shipping">
-                          <p>
-                            <strong>Livraison :</strong> {order.shipping_address}, {order.shipping_city}
-                          </p>
-                          <p>
-                            <strong>Téléphone :</strong> {order.shipping_phone}
-                          </p>
-                        </div>
-                        <div className="order-total">
-                          <span>Total :</span>
-                          <strong>{formatPrice(order.total_amount)}</strong>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                <Link to="/settings" className="pf-row-link">
+                  <i className="fas fa-lock" aria-hidden="true" />
+                  <span>Mot de passe et notifications</span>
+                  <i className="fas fa-chevron-right pf-row-link__chevron" aria-hidden="true" />
+                </Link>
+                <button type="button" className="pf-row-link pf-row-link--danger" onClick={handleLogout}>
+                  <i className="fas fa-arrow-right-from-bracket" aria-hidden="true" />
+                  <span>Se déconnecter</span>
+                </button>
+              </section>
             </div>
           </div>
         </div>
