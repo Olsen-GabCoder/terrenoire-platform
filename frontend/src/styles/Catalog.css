@@ -567,7 +567,7 @@
   .cat-filters__drawer {
     position: fixed;
     left: 0; right: 0; bottom: 0;
-    z-index: 1001;
+    z-index: 10011; /* au-dessus de l'en-tête (9999) et de la barre du bas (9998) */
     max-height: 88vh;
     background: var(--ds-white);
     border-radius: 16px 16px 0 0;
@@ -609,7 +609,7 @@
     display: block;
     position: fixed;
     inset: 0;
-    z-index: 1000;
+    z-index: 10010;
     background: rgba(0,0,0,0.4);
     opacity: 0;
     pointer-events: none;

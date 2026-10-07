@@ -1068,7 +1068,11 @@
    ══════════════════════════════════════════════════════ */
 
 .tn-page-transition {
-  animation: tn-page-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* « backwards » et non « both » : une fois l'animation finie, plus aucun
+     transform ne reste sur la page. Sinon tout élément position: fixed
+     (tiroir de filtres, modales) se positionne par rapport à la page et
+     s'ouvre hors de l'écran. */
+  animation: tn-page-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 @keyframes tn-page-enter {

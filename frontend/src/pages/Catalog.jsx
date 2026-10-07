@@ -76,7 +76,7 @@ const Catalog = () => {
       const params = { page, page_size: 12, ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v)) };
       const data = await bookService.getBooks(params);
       setBooks(data.results || data);
-      setPagination({ count: data.count || data.length, next: data.next, previous: data.previous, currentPage: page });
+      setPagination({ count: data.count ?? (Array.isArray(data) ? data.length : 0), next: data.next, previous: data.previous, currentPage: page });
     } catch { setError("Le chargement des livres n'a pas abouti"); }
     finally { setLoading(false); }
   }, [filters]);
@@ -136,7 +136,7 @@ const Catalog = () => {
               Notre <span>catalogue</span>
             </h1>
             <p className="cat-hero__desc">
-              {pagination.count} titres répartis sur {categories.length || 4} collections.
+              {pagination.count > 0 && `${pagination.count} titre${pagination.count > 1 ? 's' : ''} réparti${pagination.count > 1 ? "s" : ""} sur ${categories.length || 4} collections. `}
               Filtrez par catégorie, format ou disponibilité.
             </p>
           </div>
@@ -270,7 +270,11 @@ const Catalog = () => {
 
         {/* Result summary */}
         <div className="cat-summary">
-          <span><strong>{pagination.count} titres</strong> trouvés · page {pagination.currentPage} sur {totalPages || 1}</span>
+          {pagination.count > 0 ? (
+            <span><strong>{pagination.count} titre{pagination.count > 1 ? 's' : ''}</strong> trouvé{pagination.count > 1 ? 's' : ''} · page {pagination.currentPage} sur {totalPages || 1}</span>
+          ) : (
+            <span><strong>Aucun titre</strong> trouvé</span>
+          )}
         </div>
 
         {/* Grid */}

@@ -159,6 +159,96 @@
   margin: 0 auto;
 }
 
+/* Barre recherche + tri (même langage que les filtres du catalogue) */
+.auth-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--ds-white);
+  border: 1px solid var(--tn-gray-200);
+  border-radius: 14px;
+  box-shadow: var(--tn-shadow-1);
+  padding: 16px;
+  margin-bottom: 24px;
+}
+.auth-bar__search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.auth-bar__search-ico {
+  position: absolute;
+  left: 14px;
+  color: var(--tn-gray-500);
+  font-size: 14px;
+  pointer-events: none;
+}
+.auth-bar__search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 40px 10px 40px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--tn-gray-900);
+  background: var(--tn-cream-2);
+  border: 1px solid var(--tn-gray-200);
+  border-radius: 8px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.auth-bar__search input::-webkit-search-cancel-button { display: none; }
+.auth-bar__search input:focus-visible,
+.auth-bar__sort select:focus-visible {
+  border-color: var(--tn-orange);
+  box-shadow: var(--ds-focus-shadow);
+}
+.auth-bar__search-x {
+  position: absolute;
+  right: 4px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--tn-gray-500);
+  cursor: pointer;
+}
+.auth-bar__sort {
+  position: relative;
+  flex-shrink: 0;
+}
+.auth-bar__sort select {
+  min-height: 44px;
+  padding: 10px 34px 10px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tn-gray-700);
+  background: var(--tn-cream-2);
+  border: 1px solid var(--tn-gray-200);
+  border-radius: 8px;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.auth-bar__sort-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--tn-gray-500);
+  pointer-events: none;
+}
+@media (max-width: 480px) {
+  .auth-bar { padding: 12px; gap: 8px; }
+  .auth-bar__sort select { padding-right: 30px; font-size: 13px; }
+}
+
 /* =============================================
    GRILLE
    ============================================= */

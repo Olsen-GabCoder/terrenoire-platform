@@ -107,35 +107,32 @@ const Authors = () => {
       <div className="authors-content">
         <div className="auth-wrap">
 
-          {/* Barre filtres */}
-          <div className="cat-bar">
-            <div className="cat-bar__row">
-              <div className="cat-bar__search">
-                <i className="fas fa-search cat-bar__search-ico" />
-                    <input
-                      type="text"
-                  placeholder="Rechercher un auteur…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                {search && (
-                  <button type="button" onClick={() => setSearch('')} className="cat-bar__search-x" aria-label="Effacer">
-                    <i className="fas fa-times" />
-                      </button>
-                    )}
-                  </div>
-              <div className="cat-bar__capsules">
-                <div className="cat-cap cat-cap--sort">
-                  <i className="fas fa-arrow-up-wide-short cat-cap__ico" />
-                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                    <option value="name">Nom A-Z</option>
-                    <option value="books">Livres publiés</option>
-                      </select>
-                      </div>
-                      </div>
-                    </div>
-                  </div>
-                  
+          {/* Barre recherche + tri */}
+          <div className="auth-bar">
+            <label className="auth-bar__search">
+              <i className="fas fa-search auth-bar__search-ico" aria-hidden="true" />
+              <input
+                type="search"
+                placeholder="Rechercher un auteur…"
+                aria-label="Rechercher un auteur"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {search && (
+                <button type="button" onClick={() => setSearch('')} className="auth-bar__search-x" aria-label="Effacer la recherche">
+                  <i className="fas fa-times" />
+                </button>
+              )}
+            </label>
+            <div className="auth-bar__sort">
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} aria-label="Trier les auteurs">
+                <option value="name">Nom A-Z</option>
+                <option value="books">Livres publiés</option>
+              </select>
+              <i className="fas fa-chevron-down auth-bar__sort-arrow" aria-hidden="true" />
+            </div>
+          </div>
+
           {/* Grille */}
           {filtered.length === 0 ? (
             <div className="auth-state">

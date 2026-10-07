@@ -961,7 +961,7 @@ const BookDetail = () => {
                 to={`/catalog?search=${encodeURIComponent(book.author?.full_name || '')}`}
                 className="bd-btn bd-btn--outline bd-btn--lg"
               >
-                <i className="fas fa-user-pen" /> Tous les livres de {book.author?.full_name}
+                <i className="fas fa-user-pen" /> Tous les livres {/^[aeiouyàâäéèêëîïôöûü]/i.test(book.author?.full_name || '') ? "d'" : 'de '}{book.author?.full_name}
               </Link>
             </div>
           )}
