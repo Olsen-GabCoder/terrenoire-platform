@@ -1222,7 +1222,9 @@
 .coll-hero,
 .authd-hero,
 .profile-hero,
-.notfound-hero {
+.notfound-hero,
+.cr-hero,
+.cr-contact {
   --tn-orange: var(--tn-orange-bright);
   --ds-orange: var(--tn-orange-bright);
 }

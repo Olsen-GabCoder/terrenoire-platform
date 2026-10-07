@@ -31,6 +31,7 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Authors = lazy(() => import('./pages/Authors'));
 const About = lazy(() => import('./pages/About'));
+const Creator = lazy(() => import('./pages/Creator'));
 const Contact = lazy(() => import('./pages/Contact'));
 const Delivery = lazy(() => import('./pages/Delivery'));
 const Privacy = lazy(() => import('./pages/Privacy'));
@@ -169,6 +170,7 @@ function AppContent() {
                 <Route path="/collections/:slug" element={<CollectionDetail />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/concepteur" element={<Creator />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/delivery" element={<Delivery />} />
                 <Route path="/privacy" element={<Privacy />} />

@@ -1,5 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { newsletterAPI } from '../services/api';
 import { TnDivider } from './ui';
@@ -16,41 +15,6 @@ const AFRICAN_QUOTES = [
   { text: "Ce n'est pas le fleuve qui est grand, c'est l'eau.", author: "Proverbe beti" },
 ];
 
-function DevModalContent({ onClose, children }) {
-  const modalRef = useRef(null);
-
-  useEffect(() => {
-    const modal = modalRef.current;
-    if (!modal) return;
-    const getFocusables = () => modal.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    const focusables = getFocusables();
-    if (focusables.length > 0) focusables[0].focus();
-
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') { e.preventDefault(); onClose(); return; }
-      if (e.key !== 'Tab') return;
-      const els = getFocusables();
-      const first = els[0];
-      const last = els[els.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault(); last?.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault(); first?.focus();
-      }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
-
-  return (
-    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Développeur" className="dev-modal" onClick={e => e.stopPropagation()}>
-      {children}
-    </div>
-  );
-}
-
 const Footer = ({ minimal = false }) => {
   const year = new Date().getFullYear();
   const [email, setEmail] = useState('');
@@ -58,7 +22,6 @@ const Footer = ({ minimal = false }) => {
   const [busy, setBusy] = useState(false);
   const [apiError, setApiError] = useState('');
   const [showTop, setShowTop] = useState(false);
-  const [showDevModal, setShowDevModal] = useState(false);
   const [quote] = useState(() => AFRICAN_QUOTES[Math.floor(Math.random() * AFRICAN_QUOTES.length)]);
 
   useEffect(() => {
@@ -262,10 +225,10 @@ const Footer = ({ minimal = false }) => {
               {!minimal && (
               <div className="ft__credit">
                 <span className="ft__credit-label">Conception & Développement</span>
-                <button className="ft__credit-dev" onClick={() => setShowDevModal(true)}>
+                <Link to="/concepteur" className="ft__credit-dev">
                   <span className="ft__credit-dev-name">Olsen Kampala</span>
-                  <i className="fas fa-arrow-up-right-from-square ft__credit-dev-icon" />
-                </button>
+                  <i className="fas fa-arrow-right ft__credit-dev-icon" aria-hidden="true" />
+                </Link>
               </div>
               )}
             </div>
@@ -287,94 +250,6 @@ const Footer = ({ minimal = false }) => {
         </button>
       )}
 
-      {/* Developer modal */}
-      {showDevModal && createPortal(
-        <div className="dev-modal-overlay" onClick={() => setShowDevModal(false)} onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); setShowDevModal(false); } }}>
-          <DevModalContent onClose={() => setShowDevModal(false)}>
-            <button className="dev-modal__close" onClick={() => setShowDevModal(false)} aria-label="Fermer">
-              <i className="fas fa-times" />
-            </button>
-
-            <div className="dev-modal__header">
-              <div className="dev-modal__header-pattern" />
-              <img src="/images/photo_olsen.jpg" alt="Olsen Kampala" className="dev-modal__photo" />
-              <div className="dev-modal__identity">
-                <span className="dev-modal__eyebrow">Ingénieur Informatique · Écrivain · Conférencier</span>
-                <h2 className="dev-modal__name">Olsen Kampala</h2>
-                <p className="dev-modal__location"><i className="fas fa-location-dot" /> Libreville, Gabon</p>
-              </div>
-            </div>
-
-            <div className="dev-modal__body">
-              <p className="dev-modal__bio">
-                Ingénieur informatique, écrivain et conférencier. Passionné par la création de solutions
-                digitales à fort impact, il allie expertise technique et sensibilité littéraire.
-                Concepteur et développeur de la plateforme Terre Noire Éditions.
-              </p>
-
-              <div className="dev-modal__domains">
-                <div className="dev-modal__domain">
-                  <div className="dev-modal__domain-icon"><i className="fas fa-code" /></div>
-                  <div>
-                    <span className="dev-modal__domain-title">Dev Web & Mobile</span>
-                    <span className="dev-modal__domain-desc">React, Django, REST API, React Native</span>
-                  </div>
-                </div>
-                <div className="dev-modal__domain">
-                  <div className="dev-modal__domain-icon"><i className="fas fa-brain" /></div>
-                  <div>
-                    <span className="dev-modal__domain-title">Intelligence Artificielle</span>
-                    <span className="dev-modal__domain-desc">Machine Learning, Deep Learning, NLP</span>
-                  </div>
-                </div>
-                <div className="dev-modal__domain">
-                  <div className="dev-modal__domain-icon"><i className="fas fa-database" /></div>
-                  <div>
-                    <span className="dev-modal__domain-title">Data & Cloud</span>
-                    <span className="dev-modal__domain-desc">PostgreSQL, Python, Docker, CI/CD</span>
-                  </div>
-                </div>
-                <div className="dev-modal__domain">
-                  <div className="dev-modal__domain-icon"><i className="fas fa-feather-pointed" /></div>
-                  <div>
-                    <span className="dev-modal__domain-title">Écriture & Conférences</span>
-                    <span className="dev-modal__domain-desc">Auteur, orateur, transmission du savoir</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="dev-modal__stack">
-                <span className="dev-modal__stack-label">Quelques compétences</span>
-                <div className="dev-modal__tags">
-                  {['Python', 'JavaScript', 'React', 'Django', 'TensorFlow', 'PostgreSQL', 'Docker', 'Git', 'React Native', 'NLP'].map(t => (
-                    <span key={t} className="dev-modal__tag">{t}</span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="dev-modal__cta">
-                <span className="dev-modal__cta-label">Un projet ? Contactez-moi</span>
-                <div className="dev-modal__links">
-                  <a href="mailto:olsenkampala@gmail.com" className="dev-modal__link">
-                    <i className="fas fa-envelope" /> olsenkampala@gmail.com
-                  </a>
-                  <a href="tel:+241074301639" className="dev-modal__link">
-                    <i className="fas fa-phone" /> +241 074 30 16 39
-                  </a>
-                  <a href="https://wa.me/241074301639" target="_blank" rel="noopener noreferrer" className="dev-modal__link dev-modal__link--wa">
-                    <i className="fab fa-whatsapp" /> Discuter sur WhatsApp
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="dev-modal__footer">
-              Terre Noire Éditions &middot; v1.0
-            </div>
-          </DevModalContent>
-        </div>,
-        document.body
-      )}
     </>
   );
 };
