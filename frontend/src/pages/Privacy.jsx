@@ -207,13 +207,13 @@ const Privacy = () => {
                 </tr>
               </thead>
               <tbody>
-                <tr><td>Commandes et paiements</td><td>Execution du contrat de vente</td></tr>
-                <tr><td>Creation de compte</td><td>Execution du contrat (conditions d&apos;utilisation)</td></tr>
-                <tr><td>Newsletter</td><td>Consentement explicite (double opt-in)</td></tr>
-                <tr><td>Cookies analytiques</td><td>Consentement</td></tr>
-                <tr><td>Formulaire de contact</td><td>Intérêt légitime (répondre a vos demandes)</td></tr>
-                <tr><td>Soumission de manuscrit</td><td>Consentement et intérêt légitime</td></tr>
-                <tr><td>Obligations comptables</td><td>Obligation légale</td></tr>
+                <tr><td data-label="Traitement">Commandes et paiements</td><td data-label="Base légale">Execution du contrat de vente</td></tr>
+                <tr><td data-label="Traitement">Creation de compte</td><td data-label="Base légale">Execution du contrat (conditions d&apos;utilisation)</td></tr>
+                <tr><td data-label="Traitement">Newsletter</td><td data-label="Base légale">Consentement explicite (double opt-in)</td></tr>
+                <tr><td data-label="Traitement">Cookies analytiques</td><td data-label="Base légale">Consentement</td></tr>
+                <tr><td data-label="Traitement">Formulaire de contact</td><td data-label="Base légale">Intérêt légitime (répondre a vos demandes)</td></tr>
+                <tr><td data-label="Traitement">Soumission de manuscrit</td><td data-label="Base légale">Consentement et intérêt légitime</td></tr>
+                <tr><td data-label="Traitement">Obligations comptables</td><td data-label="Base légale">Obligation légale</td></tr>
               </tbody>
             </table>
           </div>
@@ -256,15 +256,15 @@ const Privacy = () => {
                 </tr>
               </thead>
               <tbody>
-                <tr><td>Données de compte client</td><td>Durée de vie du compte + 3 ans après dernière activité</td></tr>
-                <tr><td>Données de commande</td><td>10 ans (obligations comptables et fiscales)</td></tr>
-                <tr><td>Données de facturation</td><td>10 ans (obligation légale)</td></tr>
-                <tr><td>Données de newsletter</td><td>Jusqu&apos;a désinscription + 30 jours</td></tr>
-                <tr><td>Messages de contact</td><td>12 mois après clôture de la demande</td></tr>
-                <tr><td>Manuscrits non retenus</td><td>12 mois après notification du refus</td></tr>
-                <tr><td>Manuscrits acceptés</td><td>Durée du processus éditorial et contrat d&apos;edition</td></tr>
-                <tr><td>Cookies</td><td>13 mois maximum</td></tr>
-                <tr><td>Logs de connexion</td><td>12 mois</td></tr>
+                <tr><td data-label="Type de données">Données de compte client</td><td data-label="Durée de conservation">Durée de vie du compte + 3 ans après dernière activité</td></tr>
+                <tr><td data-label="Type de données">Données de commande</td><td data-label="Durée de conservation">10 ans (obligations comptables et fiscales)</td></tr>
+                <tr><td data-label="Type de données">Données de facturation</td><td data-label="Durée de conservation">10 ans (obligation légale)</td></tr>
+                <tr><td data-label="Type de données">Données de newsletter</td><td data-label="Durée de conservation">Jusqu&apos;a désinscription + 30 jours</td></tr>
+                <tr><td data-label="Type de données">Messages de contact</td><td data-label="Durée de conservation">12 mois après clôture de la demande</td></tr>
+                <tr><td data-label="Type de données">Manuscrits non retenus</td><td data-label="Durée de conservation">12 mois après notification du refus</td></tr>
+                <tr><td data-label="Type de données">Manuscrits acceptés</td><td data-label="Durée de conservation">Durée du processus éditorial et contrat d&apos;edition</td></tr>
+                <tr><td data-label="Type de données">Cookies</td><td data-label="Durée de conservation">13 mois maximum</td></tr>
+                <tr><td data-label="Type de données">Logs de connexion</td><td data-label="Durée de conservation">12 mois</td></tr>
               </tbody>
             </table>
           </div>
@@ -359,15 +359,15 @@ const Privacy = () => {
               <thead>
                 <tr>
                   <th>Type</th>
-                  <th>Finalite</th>
+                  <th>Finalité</th>
                   <th>Durée</th>
                   <th>Consentement</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td><strong>Essentiels</strong></td><td>Authentification, panier, sécurité</td><td>Session / 12h</td><td>Non requis</td></tr>
-                <tr><td><strong>Preferences</strong></td><td>Langue, theme, paramètres d&apos;affichage</td><td>12 mois</td><td>Non requis</td></tr>
-                <tr><td><strong>Analytiques</strong></td><td>Statistiques de fréquentation, pages vues</td><td>13 mois</td><td>Requis</td></tr>
+                <tr><td data-label="Type"><strong>Essentiels</strong></td><td data-label="Finalité">Authentification, panier, sécurité</td><td data-label="Durée">Session / 12h</td><td data-label="Consentement">Non requis</td></tr>
+                <tr><td data-label="Type"><strong>Preferences</strong></td><td data-label="Finalité">Langue, theme, paramètres d&apos;affichage</td><td data-label="Durée">12 mois</td><td data-label="Consentement">Non requis</td></tr>
+                <tr><td data-label="Type"><strong>Analytiques</strong></td><td data-label="Finalité">Statistiques de fréquentation, pages vues</td><td data-label="Durée">13 mois</td><td data-label="Consentement">Requis</td></tr>
               </tbody>
             </table>
           </div>

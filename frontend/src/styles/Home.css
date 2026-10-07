@@ -983,3 +983,8 @@
 @media (max-width: 599px) {
   .home-books-grid--featured > :nth-child(n + 7) { display: none; }
 }
+
+/* Mobile : les genres passent à la ligne (aucun onglet coupé au bord de l'écran) */
+@media (max-width: 768px) {
+  .home-genres__tabs { flex-wrap: wrap; overflow-x: visible; }
+}

@@ -113,6 +113,7 @@
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x proximity;
+    scroll-padding-inline: 1.5rem;
   }
   .faq-cats::-webkit-scrollbar { display: none; }
   .faq-cat {
@@ -120,5 +121,16 @@
     min-height: 40px;
     white-space: nowrap;
     scroll-snap-align: start;
+  }
+}
+
+/* Le contenu prend la largeur de l'écran, jamais celle de la rangée de
+   catégories défilante (sinon tout le texte débordait à droite sur mobile) */
+.faq-content { width: 100%; box-sizing: border-box; min-width: 0; overflow-wrap: break-word; }
+@media (max-width: 640px) {
+  /* Fondu à droite : on voit qu'il y a d'autres catégories en faisant glisser */
+  .faq-cats {
+    -webkit-mask-image: linear-gradient(to right, #000 85%, transparent);
+    mask-image: linear-gradient(to right, #000 85%, transparent);
   }
 }

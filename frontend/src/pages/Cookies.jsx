@@ -65,9 +65,9 @@ const Cookies = () => (
             <table className="ck-table">
               <thead><tr><th>Finalité</th><th>Description</th><th>Durée</th></tr></thead>
               <tbody>
-                <tr><td>Authentification</td><td>Maintient votre session de connexion sécurisée</td><td>12 heures</td></tr>
-                <tr><td>Renouvellement de session</td><td>Permet de rester connecté sans re-saisir vos identifiants</td><td>7 jours</td></tr>
-                <tr><td>Sécurité</td><td>Protection contre les soumissions de formulaires frauduleuses</td><td>Session</td></tr>
+                <tr><td data-label="Finalité">Authentification</td><td data-label="Description">Maintient votre session de connexion sécurisée</td><td data-label="Durée">12 heures</td></tr>
+                <tr><td data-label="Finalité">Renouvellement de session</td><td data-label="Description">Permet de rester connecté sans re-saisir vos identifiants</td><td data-label="Durée">7 jours</td></tr>
+                <tr><td data-label="Finalité">Sécurité</td><td data-label="Description">Protection contre les soumissions de formulaires frauduleuses</td><td data-label="Durée">Session</td></tr>
               </tbody>
             </table>
           </div>
@@ -90,9 +90,9 @@ const Cookies = () => (
             <table className="ck-table">
               <thead><tr><th>Finalité</th><th>Description</th><th>Durée</th></tr></thead>
               <tbody>
-                <tr><td>Panier</td><td>Sauvegarde le contenu de votre panier d&apos;achat</td><td>30 jours</td></tr>
-                <tr><td>Liste d&apos;envie</td><td>Mémorise vos livres favoris (visiteurs non connectés)</td><td>30 jours</td></tr>
-                <tr><td>Préférences</td><td>Retient vos préférences d&apos;affichage</td><td>12 mois</td></tr>
+                <tr><td data-label="Finalité">Panier</td><td data-label="Description">Sauvegarde le contenu de votre panier d&apos;achat</td><td data-label="Durée">30 jours</td></tr>
+                <tr><td data-label="Finalité">Liste d&apos;envie</td><td data-label="Description">Mémorise vos livres favoris (visiteurs non connectés)</td><td data-label="Durée">30 jours</td></tr>
+                <tr><td data-label="Finalité">Préférences</td><td data-label="Description">Retient vos préférences d&apos;affichage</td><td data-label="Durée">12 mois</td></tr>
               </tbody>
             </table>
           </div>
@@ -116,7 +116,7 @@ const Cookies = () => (
             <table className="ck-table">
               <thead><tr><th>Service</th><th>Finalité</th><th>Durée</th></tr></thead>
               <tbody>
-                <tr><td>Statistiques internes</td><td>Fréquentation, pages vues, parcours utilisateur</td><td>13 mois max</td></tr>
+                <tr><td data-label="Service">Statistiques internes</td><td data-label="Finalité">Fréquentation, pages vues, parcours utilisateur</td><td data-label="Durée">13 mois max</td></tr>
               </tbody>
             </table>
           </div>
