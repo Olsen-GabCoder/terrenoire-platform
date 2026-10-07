@@ -6,6 +6,7 @@ import TnButton from '../components/ui/TnButton';
 import TnAlert from '../components/ui/TnAlert';
 import TnLink from '../components/ui/TnLink';
 import '../styles/Login.css';
+import PageHero from '../components/ui/PageHero';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -63,19 +64,7 @@ const ResetPassword = () => {
   if (invalidLink) {
     return (
       <div className="login-page">
-        <section className="login-hero">
-          <div className="login-hero__orb login-hero__orb--1" />
-          <div className="login-hero__grid-bg" />
-          <div className="login-hero__inner">
-            <h1 className="login-hero__title">
-              <span className="login-hero__title-main">Lien invalide</span>
-            </h1>
-            <p className="login-hero__sub">
-              Ce lien de réinitialisation est invalide ou a expiré. Demandez un nouveau lien.
-            </p>
-          </div>
-        </section>
-        <div className="login-hero-fade" />
+        <PageHero compact title="Lien" accent="invalide" subtitle="Ce lien de réinitialisation est invalide ou a expiré. Demandez un nouveau lien." />
         <div className="login-content">
           <div className="login-wrap">
             <div className="login-card">
@@ -95,46 +84,20 @@ const ResetPassword = () => {
   if (success) {
     return (
       <div className="login-page">
-        <section className="login-hero">
-          <div className="login-hero__inner">
-            <div className="login-hero__icon">
-              <i className="fas fa-check-circle" style={{ color: 'var(--color-success)' }} />
-            </div>
-            <h1 className="login-hero__title">
-              <span className="login-hero__title-main">Mot de passe réinitialisé</span>
-            </h1>
-            <p className="login-hero__sub">
-              Vous allez être redirigé vers la page de connexion...
-            </p>
-          </div>
-        </section>
-        <div className="login-hero-fade" />
+        <PageHero compact eyebrow="C'est fait" icon="fa-check" title="Mot de passe" accent="réinitialisé" subtitle="Vous allez être redirigé vers la page de connexion…" />
       </div>
     );
   }
 
   return (
     <div className="login-page">
-      <section className="login-hero">
-        <div className="login-hero__orb login-hero__orb--1" />
-        <div className="login-hero__orb login-hero__orb--2" />
-        <div className="login-hero__grid-bg" />
-        <div className="login-hero__inner">
-          <span className="login-hero__pill">Nouveau mot de passe</span>
-          <div className="login-hero__line" />
-          <div className="login-hero__icon">
-            <i className="fas fa-lock" />
-          </div>
-          <h1 className="login-hero__title">
-            <span className="login-hero__title-main">Définir un nouveau mot de passe</span>
-          </h1>
-          <p className="login-hero__sub">
-            Choisissez un mot de passe sécurisé (au moins 8 caractères).
-          </p>
-        </div>
-      </section>
-
-      <div className="login-hero-fade" />
+      <PageHero
+        compact
+        eyebrow="Nouveau mot de passe"
+        title="Définir un nouveau"
+        accent="mot de passe"
+        subtitle="Choisissez un mot de passe sécurisé (au moins 8 caractères)."
+      />
 
       <div className="login-content">
         <div className="login-content__bg">

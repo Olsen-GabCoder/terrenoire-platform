@@ -623,9 +623,10 @@
 }
 
 .bd-tab-panel__title {
-  font-size: 1.25rem;
+  font-family: var(--tn-serif);
+  font-size: 20px;
   font-weight: 700;
-  color: var(--color-gray-800);
+  color: var(--tn-gray-900);
   margin: 0 0 1rem;
   padding-bottom: 0.5rem;
   border-bottom: 2px solid var(--color-gray-200);

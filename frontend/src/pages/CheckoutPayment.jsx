@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import orderService from '../services/orderService';
 import '../styles/CheckoutPayment.css';
+import PageHero from '../components/ui/PageHero';
 
 const OPERATOR_LABELS = {
   moov_money: 'Moov Money',
@@ -168,12 +169,7 @@ const CheckoutPayment = () => {
   if (!storedRef) {
     return (
       <div className="cpay-page">
-        <div className="cpay-hero">
-          <div className="cpay-hero__orb" />
-          <div className="cpay-hero__line" />
-          <h1 className="cpay-hero__title">Paiement introuvable</h1>
-        </div>
-        <div className="cpay-hero-fade" />
+        <PageHero compact title="Paiement" accent="introuvable" />
         <div className="cpay-body">
           <div className="cpay-icon cpay-icon--failed">
             <i className="fas fa-xmark" />
@@ -208,12 +204,7 @@ const CheckoutPayment = () => {
 
   return (
     <div className="cpay-page">
-      <section className="cpay-hero">
-        <div className="cpay-hero__orb" />
-        <div className="cpay-hero__line" />
-        <h1 className="cpay-hero__title">{heroTitles[status] || heroTitles.PENDING}</h1>
-      </section>
-      <div className="cpay-hero-fade" />
+      <PageHero compact title={heroTitles[status] || heroTitles.PENDING} />
 
       <div className="cpay-body">
 

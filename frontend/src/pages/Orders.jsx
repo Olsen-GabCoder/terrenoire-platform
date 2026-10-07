@@ -7,6 +7,8 @@ import '../styles/Orders.css';
 import { formatPhoneDisplay } from '../utils/phone';
 import { parseApiError } from '../services/api';
 import { TnBookCover } from '../components/ui';
+import PageHero from '../components/ui/PageHero';
+import EmptyState from '../components/ui/EmptyState';
 
 const Orders = () => {
   const { user, authChecked } = useAuth();
@@ -101,24 +103,14 @@ const Orders = () => {
 
   return (
     <div className="ord-page">
-      <section className="ord-hero">
-        <div className="ord-hero__orb ord-hero__orb--1" />
-        <div className="ord-hero__orb ord-hero__orb--2" />
-        <div className="ord-hero__grid-bg" />
-        <div className="ord-hero__inner">
-          <div className="ord-hero__line" />
-          <h1 className="ord-hero__title">Mes commandes</h1>
-          <p className="ord-hero__sub">
-            Consultez l&apos;historique de vos commandes et suivez leur statut.
-          </p>
-          {orders.length > 0 && (
-            <p className="ord-hero__count">
-              <strong>{orders.length}</strong> commande{orders.length > 1 ? 's' : ''}
-            </p>
-          )}
-        </div>
-      </section>
-      <div className="ord-hero-fade" />
+      <PageHero
+        compact
+        title="Mes"
+        accent="commandes"
+        subtitle={orders.length > 0
+          ? `${orders.length} commande${orders.length > 1 ? 's' : ''} · suivez leur statut et retrouvez vos ebooks.`
+          : "Consultez l'historique de vos commandes et suivez leur statut."}
+      />
 
       <div className="ord-content">
         <div className="ord-wrap">
@@ -129,16 +121,15 @@ const Orders = () => {
           )}
 
           {orders.length === 0 ? (
-            <div className="ord-empty">
-              <div className="ord-empty__ico">
-                <i className="fas fa-shopping-bag" />
-              </div>
-              <h2>Aucun ouvrage n&apos;a encore quitté nos étagères pour vous</h2>
-              <p>Vos commandes apparaîtront ici dès qu&apos;une histoire prendra le chemin de votre bibliothèque.</p>
-              <Link to="/catalog" className="ord-btn ord-btn--primary">
-                <i className="fas fa-book" /> Découvrir nos titres
+            <EmptyState
+              icon="fa-box-open"
+              title="Aucun ouvrage n'a encore quitté nos étagères pour vous"
+              text="Vos commandes apparaîtront ici dès qu'une histoire prendra le chemin de votre bibliothèque."
+            >
+              <Link to="/catalog" className="tn-btn tn-btn--primary tn-btn--lg">
+                <i className="fas fa-book-open" /> Découvrir nos titres
               </Link>
-            </div>
+            </EmptyState>
           ) : (
             <div className="ord-list">
               {orders.map((order) => {

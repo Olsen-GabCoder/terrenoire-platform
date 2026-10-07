@@ -6,8 +6,17 @@
 :root {
   /* ─────────── Brand colors ─────────── */
   /* Orange Terracotta — couleur signature */
-  --tn-orange:        #E8601C;
-  --tn-orange-hover:  #C94E15;
+  /* Orange de marque. Sur fond clair, l'orange vif (#E8601C) n'offre que
+     3,4:1 de contraste : texte et boutons utilisent donc une teinte plus
+     profonde (4,8:1 sur blanc). L'orange vif est réservé aux fonds sombres,
+     où il est rétabli plus bas (en-têtes, pied de page, menu). */
+  --tn-orange:        #C24E14;
+  --tn-orange-hover:  #A94411;
+  --tn-orange-bright: #E8601C;
+  --tn-orange-ink:    #B54812;
+  /* Boutons d'action : même teinte partout, y compris sur fond sombre */
+  --tn-cta:           #C24E14;
+  --tn-cta-hover:     #A94411;
   --tn-orange-light:  #F4863F;
   --tn-orange-50:     #FCEFE6;
   --tn-orange-100:    #F9DCC8;
@@ -128,7 +137,7 @@
 
   /* Rayons */
   --radius-xs:          var(--tn-r-1);
-  --radius-sm:          var(--tn-r-1);
+  --radius-sm:          var(--tn-r-2);   /* boutons et champs : 8px partout */
   --radius-md:          var(--tn-r-2);
   --radius-lg:          var(--tn-r-3);
   --radius-xl:          var(--tn-r-4);
@@ -336,9 +345,9 @@
 @keyframes tn-btn-spin { to { transform: rotate(360deg); } }
 
 /* ── Variants ── */
-.tn-btn--primary       { background: var(--ds-orange); color: var(--ds-white); }
+.tn-btn--primary       { background: var(--tn-cta); color: var(--ds-white); }
 .tn-btn--primary:hover:not(:disabled):not([aria-busy="true"]) {
-  background: var(--ds-orange-hover);
+  background: var(--tn-cta-hover);
   box-shadow: 0 4px 14px rgba(232, 96, 28, 0.30), 0 2px 6px rgba(20, 14, 8, 0.08);
 }
 .tn-btn--secondary     { background: var(--ds-white); color: var(--ds-gray-900); border-color: var(--ds-gray-200); }
@@ -433,12 +442,13 @@
 /* .tn-field — Label + input wrapper (Vague 2 P2.3) */
 .tn-field { display: flex; flex-direction: column; gap: 6px; }
 .tn-field__label {
-  font-family: var(--ds-mono);
-  font-size: 0.75rem;
+  /* Même étiquette que tous les autres formulaires du site (commande, profil…) */
+  font-family: var(--ds-sans);
+  font-size: 0.875rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ds-gray-700);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ds-gray-900);
 }
 .tn-field__label--required::after {
   content: ' *';
@@ -944,7 +954,7 @@
 .tn-alert--error   { background: var(--ds-error-bg);   border-color: #F5C6CB; color: var(--ds-error); }
 .tn-alert--success { background: var(--ds-success-bg); border-color: #B2DFBC; color: var(--ds-success); }
 .tn-alert--warning { background: var(--ds-warning-bg); border-color: #FFE0B2; color: var(--ds-warning); }
-.tn-alert--info    { background: var(--ds-info-bg);    border-color: #BBDEFB; color: var(--ds-info); }
+.tn-alert--info    { background: var(--ds-info-bg);    border-color: rgba(200, 149, 108, 0.45); color: var(--ds-info); }
 
 /* ── Icon ── */
 .tn-alert__icon { flex-shrink: 0; font-size: 1rem; line-height: 1.3125; display: flex; align-items: center; }
@@ -1192,4 +1202,22 @@
   pointer-events: none;
   z-index: 1;
   border-radius: inherit;
+}
+
+/* ============================================================
+   Fonds sombres : l'orange vif y est plus lisible (5,8:1 sur noir)
+   ============================================================ */
+.tn-header,
+.tn-drawer,
+.ft,
+.tn-page-hero,
+.home-hero,
+.cat-hero,
+.bd-hero,
+.coll-hero,
+.authd-hero,
+.profile-hero,
+.notfound-hero {
+  --tn-orange: var(--tn-orange-bright);
+  --ds-orange: var(--tn-orange-bright);
 }

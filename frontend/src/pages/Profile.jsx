@@ -262,8 +262,8 @@ const Profile = () => {
             <p className="profile-hero-since">Membre depuis {memberSince}</p>
           )}
         </div>
-        <div className="profile-hero-fade" />
       </section>
+      <div className="tn-motif-strip" style={{ opacity: 0.6 }} aria-hidden="true" />
 
       <section className="profile-content-section">
         <div className="profile-content-inner">

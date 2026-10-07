@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { useWishlist } from '../context/WishlistContext';
 import BookCard from '../components/BookCard';
 import '../styles/Wishlist.css';
+import PageHero from '../components/ui/PageHero';
+import EmptyState from '../components/ui/EmptyState';
 
 const Wishlist = () => {
   const { wishlistItems, removeFromWishlist, isInWishlist } = useWishlist();
@@ -9,30 +11,18 @@ const Wishlist = () => {
   if (!wishlistItems.length) {
     return (
       <div className="wishlist-page">
-        <section className="wishlist-hero">
-          <div className="wishlist-hero__orb" />
-          <div className="wishlist-hero__grid-bg" />
-          <div className="wishlist-hero__inner">
-            <div className="wishlist-hero__line" />
-            <h1 className="wishlist-hero__title">Ma liste d&apos;envie</h1>
-            <p className="wishlist-hero__sub">Votre liste d&apos;envie est vide.</p>
-          </div>
-        </section>
-        <div className="wishlist-hero-fade" />
+        <PageHero compact title="Ma liste" accent="d'envie" subtitle="Votre liste d'envie est vide." />
 
         <div className="wishlist-content">
-          <div className="wishlist-empty">
-            <div className="wishlist-empty__ico">
-              <i className="far fa-heart" />
-            </div>
-            <h2>Pas encore de pages élues</h2>
-            <p>Les livres que vous aimez méritent un lieu à part. Cliquez sur le cœur d&apos;un ouvrage pour en faire l&apos;un de vos favoris.</p>
-            <div className="wishlist-empty__actions">
-              <Link to="/catalog" className="wishlist-btn wishlist-btn--primary">
-                <i className="fas fa-book" /> Explorer le catalogue
-              </Link>
-            </div>
-          </div>
+          <EmptyState
+            icon="fa-heart"
+            title="Pas encore de pages élues"
+            text="Les livres que vous aimez méritent un lieu à part. Touchez le cœur d'un ouvrage pour en faire l'un de vos favoris."
+          >
+            <Link to="/catalog" className="tn-btn tn-btn--primary tn-btn--lg">
+              <i className="fas fa-book-open" /> Explorer le catalogue
+            </Link>
+          </EmptyState>
         </div>
       </div>
     );
@@ -40,18 +30,12 @@ const Wishlist = () => {
 
   return (
     <div className="wishlist-page">
-      <section className="wishlist-hero">
-        <div className="wishlist-hero__orb" />
-        <div className="wishlist-hero__grid-bg" />
-        <div className="wishlist-hero__inner">
-          <div className="wishlist-hero__line" />
-          <h1 className="wishlist-hero__title">Ma liste d&apos;envie</h1>
-          <p className="wishlist-hero__sub">
-            {wishlistItems.length} livre{wishlistItems.length > 1 ? 's' : ''} dans votre liste
-          </p>
-        </div>
-      </section>
-      <div className="wishlist-hero-fade" />
+      <PageHero
+        compact
+        title="Ma liste"
+        accent="d'envie"
+        subtitle={`${wishlistItems.length} livre${wishlistItems.length > 1 ? 's' : ''} dans votre liste`}
+      />
 
       <div className="wishlist-content">
         <div className="wishlist-grid">

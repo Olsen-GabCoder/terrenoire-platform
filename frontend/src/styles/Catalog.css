@@ -573,11 +573,17 @@
     border-radius: 16px 16px 0 0;
     box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
     transform: translateY(100%);
-    transition: transform 300ms var(--tn-ease);
+    /* Fermé : réellement masqué (non focusable), une fois l'animation finie */
+    visibility: hidden;
+    transition: transform 300ms var(--tn-ease), visibility 0s linear 300ms;
     display: flex;
     flex-direction: column;
   }
-  .cat-filters--drawer-open .cat-filters__drawer { transform: translateY(0); }
+  .cat-filters--drawer-open .cat-filters__drawer {
+    transform: translateY(0);
+    visibility: visible;
+    transition: transform 300ms var(--tn-ease), visibility 0s;
+  }
 
   .cat-filters__drawer-header {
     display: flex;

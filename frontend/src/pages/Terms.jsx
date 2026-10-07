@@ -1,22 +1,17 @@
 import { Link } from 'react-router-dom';
 import '../styles/Terms.css';
+import PageHero from '../components/ui/PageHero';
 
 const LAST_UPDATED = '21 mai 2026';
 
 const Terms = () => (
   <div className="terms-page">
-    <section className="terms-hero">
-      <div className="terms-hero__orb terms-hero__orb--1" />
-      <div className="terms-hero__grid-bg" />
-      <div className="terms-hero__inner">
-        <div className="terms-hero__line" />
-        <h1 className="terms-hero__title">Conditions générales d&apos;utilisation</h1>
-        <p className="terms-hero__sub">
-          Regles d&apos;utilisation du site et des services de Terre Noire Éditions.
-        </p>
-      </div>
-    </section>
-    <div className="terms-hero-fade" />
+    <PageHero
+      eyebrow="Informations légales"
+      title="Conditions générales"
+      accent="d'utilisation"
+      subtitle="Règles d'utilisation du site et des services de Terre Noire Éditions."
+    />
 
     <div className="terms-content">
       <p className="tm-intro">

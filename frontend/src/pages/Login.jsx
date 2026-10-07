@@ -14,6 +14,7 @@ const getRedirectTarget = (state) => {
   return target && target.startsWith('/') && !target.startsWith('//') ? target : '/';
 };
 import '../styles/Login.css';
+import PageHero from '../components/ui/PageHero';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -84,30 +85,13 @@ const Login = () => {
   return (
     <div className="login-page">
       {/* ── HERO ── */}
-      <section className="login-hero">
-        <div className="login-hero__orb login-hero__orb--1" />
-        <div className="login-hero__orb login-hero__orb--2" />
-        <div className="login-hero__orb login-hero__orb--3" />
-        <div className="login-hero__grid-bg" />
-        <div className="login-hero__shine" />
-
-        <div className="login-hero__inner">
-          <span className="login-hero__pill">Bienvenue</span>
-          <div className="login-hero__line" />
-          <div className="login-hero__icon">
-            <i className="fas fa-key" />
-          </div>
-          <h1 className="login-hero__title">
-            <span className="login-hero__title-main">Retrouver ma bibliothèque</span>
-          </h1>
-          <p className="login-hero__sub">
-            Accédez à votre espace pour gérer vos commandes, suivre vos manuscrits
-            et retrouver votre bibliothèque.
-          </p>
-        </div>
-      </section>
-
-      <div className="login-hero-fade" />
+      <PageHero
+        compact
+        eyebrow="Bienvenue"
+        title="Retrouver ma"
+        accent="bibliothèque"
+        subtitle="Accédez à votre espace pour gérer vos commandes, suivre vos manuscrits et lire vos ebooks."
+      />
 
       {/* ── CONTENU ── */}
       <div className="login-content">

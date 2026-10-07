@@ -1,24 +1,18 @@
 import { Link } from 'react-router-dom';
 import '../styles/CGV.css';
+import PageHero from '../components/ui/PageHero';
 
 const LAST_UPDATED = '27 mai 2026';
 
 const CGV = () => {
   return (
     <div className="cgv-page">
-      <section className="cgv-hero">
-        <div className="cgv-hero__orb cgv-hero__orb--1" />
-        <div className="cgv-hero__grid-bg" />
-        <div className="cgv-hero__inner">
-          <div className="cgv-hero__line" />
-          <h1 className="cgv-hero__title">Conditions générales de vente</h1>
-          <p className="cgv-hero__sub">
-            Les présentes conditions régissent l&apos;ensemble des ventes réalisées par Terre Noire Éditions.
-          </p>
-        </div>
-      </section>
-
-      <div className="cgv-hero-fade" />
+      <PageHero
+        eyebrow="Informations légales"
+        title="Conditions générales"
+        accent="de vente"
+        subtitle="Les présentes conditions régissent l'ensemble des ventes réalisées par Terre Noire Éditions."
+      />
 
       <div className="cgv-content">
         <p className="cgv-intro">

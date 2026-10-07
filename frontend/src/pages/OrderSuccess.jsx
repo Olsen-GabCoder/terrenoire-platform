@@ -4,6 +4,7 @@ import orderService from '../services/orderService';
 import TnAlert from '../components/ui/TnAlert';
 import { formatPhoneDisplay } from '../utils/phone';
 import '../styles/OrderSuccess.css';
+import PageHero from '../components/ui/PageHero';
 
 const PAID_STATUSES = ['PAID', 'SHIPPED'];
 
@@ -71,23 +72,16 @@ const OrderSuccess = () => {
 
   return (
     <div className="os-page">
-      <section className="os-hero">
-        <div className="os-hero__orb" />
-        <div className="os-hero__grid-bg" />
-        <div className="os-hero__inner">
-          <div className="os-hero__icon">
-            <i className="fas fa-check-circle" />
-          </div>
-          <div className="os-hero__line" />
-          <h1 className="os-hero__title">Merci pour votre commande</h1>
-          <p className="os-hero__sub">
-            {isPaid
-              ? <>Votre paiement est confirmé. Commande <strong>#{orderId}</strong>.</>
-              : <>Votre commande <strong>#{orderId}</strong> est enregistrée.</>}
-          </p>
-        </div>
-      </section>
-      <div className="os-hero-fade" />
+      <PageHero
+        compact
+        eyebrow={isPaid ? 'Paiement confirmé' : 'Commande enregistrée'}
+        icon="fa-check"
+        title="Merci pour votre"
+        accent="commande"
+        subtitle={isPaid
+          ? <>Votre paiement est confirmé. Commande <strong>#{orderId}</strong>.</>
+          : <>Votre commande <strong>#{orderId}</strong> est enregistrée.</>}
+      />
 
       <div className="os-content">
         <div className="os-card">

@@ -13,6 +13,7 @@ import {
 } from '../utils/phone';
 import '../styles/Checkout.css';
 import TnBookCover from '../components/ui/TnBookCover';
+import PageHero from '../components/ui/PageHero';
 
 const OPERATOR_NAMES = { moov_money: 'Moov Money', airtel_money: 'Airtel Money' };
 
@@ -270,20 +271,14 @@ const Checkout = () => {
 
   return (
     <div className="chk-page">
-      <section className="chk-hero">
-        <div className="chk-hero__orb" />
-        <div className="chk-hero__grid-bg" />
-        <div className="chk-hero__inner">
-          <div className="chk-hero__line" />
-          <h1 className="chk-hero__title">Finaliser la commande</h1>
-          <p className="chk-hero__sub">
-            {hasPhysical
-              ? 'Vérifiez vos informations de livraison avant de confirmer.'
-              : 'Vérifiez votre commande avant de confirmer.'}
-          </p>
-        </div>
-      </section>
-      <div className="chk-hero-fade" />
+      <PageHero
+        compact
+        title="Finaliser la"
+        accent="commande"
+        subtitle={hasPhysical
+          ? 'Vérifiez vos informations de livraison avant de confirmer.'
+          : 'Vérifiez votre commande avant de confirmer.'}
+      />
 
       <form onSubmit={handleSubmit} className="chk-content">
         {retryOrder && (

@@ -1,22 +1,17 @@
 import { Link } from 'react-router-dom';
 import '../styles/Cookies.css';
+import PageHero from '../components/ui/PageHero';
 
 const LAST_UPDATED = '21 mai 2026';
 
 const Cookies = () => (
   <div className="cookies-page">
-    <section className="cookies-hero">
-      <div className="cookies-hero__orb cookies-hero__orb--1" />
-      <div className="cookies-hero__grid-bg" />
-      <div className="cookies-hero__inner">
-        <div className="cookies-hero__line" />
-        <h1 className="cookies-hero__title">Politique de cookies</h1>
-        <p className="cookies-hero__sub">
-          Comprendre comment et pourquoi nous utilisons les cookies sur notre site.
-        </p>
-      </div>
-    </section>
-    <div className="cookies-hero-fade" />
+    <PageHero
+      eyebrow="Informations légales"
+      title="Politique de"
+      accent="cookies"
+      subtitle="Comprendre comment et pourquoi nous utilisons les cookies sur notre site."
+    />
 
     <div className="cookies-content">
       <p className="ck-intro">

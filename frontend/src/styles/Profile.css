@@ -18,7 +18,7 @@
 .profile-hero {
   flex-shrink: 0;
   width: 100%;
-  padding: 5.5rem 1.5rem 3rem;
+  padding: 48px 1.5rem 40px;
   background: linear-gradient(170deg, var(--tn-black) 0%, var(--tn-black) 38%, var(--tn-black) 100%);
   color: var(--ds-white);
   position: relative;
@@ -225,9 +225,10 @@
 }
 
 .profile-hero-title {
-  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-family: var(--tn-serif);
+  font-size: clamp(28px, 4vw, 40px);
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   margin: 0 auto 0.35rem;
   color: var(--ds-white);
 }
@@ -273,30 +274,17 @@
 }
 
 .profile-stat-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: var(--radius-md);
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
-  color: var(--ds-white);
+  font-size: 1.125rem;
   flex-shrink: 0;
-}
-
-.profile-stat-icon--orders {
-  background: linear-gradient(135deg, #2dd4bf, #14b8a6);
-  box-shadow: 0 4px 14px rgba(20, 184, 166, 0.35);
-}
-
-.profile-stat-icon--revenue {
-  background: linear-gradient(135deg, var(--tn-orange), var(--tn-orange-hover));
-  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
-}
-
-.profile-stat-icon--calendar {
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+  /* Pictos aux couleurs de la maison (plus de turquoise ni de violet) */
+  background: var(--tn-orange-50);
+  color: var(--tn-orange);
 }
 
 .profile-stat-body {
@@ -1026,7 +1014,7 @@
 
 @media (max-width: 768px) {
   .profile-hero {
-    padding: 5.5rem 1rem 2.5rem;
+    padding: 32px 1rem 28px;
   }
 
   .profile-hero-inner {
@@ -1129,7 +1117,7 @@
 .message.info {
   background: var(--ds-info-bg, #E3F2FD);
   color: var(--ds-info, #1565C0);
-  border: 1px solid rgba(21, 101, 192, 0.25);
+  border: 1px solid rgba(200, 149, 108, 0.45);
 }
 .form-hint--error {
   color: var(--color-error, #c62828);

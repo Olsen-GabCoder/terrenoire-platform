@@ -9,6 +9,7 @@ import TnAlert from '../components/ui/TnAlert';
 import TnLink from '../components/ui/TnLink';
 import TnCheckbox from '../components/ui/TnCheckbox';
 import '../styles/Register.css';
+import PageHero from '../components/ui/PageHero';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -142,30 +143,13 @@ const Register = () => {
   return (
     <div className="reg-page">
       {/* ── HERO ── */}
-      <section className="reg-hero">
-        <div className="reg-hero__orb reg-hero__orb--1" />
-        <div className="reg-hero__orb reg-hero__orb--2" />
-        <div className="reg-hero__orb reg-hero__orb--3" />
-        <div className="reg-hero__grid-bg" />
-        <div className="reg-hero__shine" />
-
-        <div className="reg-hero__inner">
-          <span className="reg-hero__pill">Rejoignez-nous</span>
-          <div className="reg-hero__line" />
-          <div className="reg-hero__icon">
-            <i className="fas fa-user-plus" />
-          </div>
-          <h1 className="reg-hero__title">
-            <span className="reg-hero__title-main">Rejoindre la communauté</span>
-          </h1>
-          <p className="reg-hero__sub">
-            Rejoignez notre communauté d'auteurs et de lecteurs — commandez en toute simplicité,
-            soumettez vos manuscrits et accédez à votre espace personnel.
-          </p>
-        </div>
-      </section>
-
-      <div className="reg-hero-fade" />
+      <PageHero
+        compact
+        eyebrow="Rejoignez-nous"
+        title="Rejoindre la"
+        accent="communauté"
+        subtitle="Commandez en toute simplicité, soumettez vos manuscrits et retrouvez vos ebooks dans votre espace."
+      />
 
       {/* ── CONTENU ── */}
       <div className="reg-content">

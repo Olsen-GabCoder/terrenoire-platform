@@ -5,6 +5,7 @@ import TnButton from '../components/ui/TnButton';
 import TnAlert from '../components/ui/TnAlert';
 import TnLink from '../components/ui/TnLink';
 import '../styles/Login.css';
+import PageHero from '../components/ui/PageHero';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -34,28 +35,13 @@ const ForgotPassword = () => {
 
   return (
     <div className="login-page">
-      <section className="login-hero">
-        <div className="login-hero__orb login-hero__orb--1" />
-        <div className="login-hero__orb login-hero__orb--2" />
-        <div className="login-hero__orb login-hero__orb--3" />
-        <div className="login-hero__grid-bg" />
-        <div className="login-hero__shine" />
-        <div className="login-hero__inner">
-          <span className="login-hero__pill">Mot de passe oublié</span>
-          <div className="login-hero__line" />
-          <div className="login-hero__icon">
-            <i className="fas fa-key" />
-          </div>
-          <h1 className="login-hero__title">
-            <span className="login-hero__title-main">Réinitialiser</span>
-          </h1>
-          <p className="login-hero__sub">
-            Saisissez votre email pour recevoir un lien de réinitialisation.
-          </p>
-        </div>
-      </section>
-
-      <div className="login-hero-fade" />
+      <PageHero
+        compact
+        eyebrow="Mot de passe oublié"
+        title="Réinitialiser"
+        accent="l'accès"
+        subtitle="Saisissez votre email pour recevoir un lien de réinitialisation."
+      />
 
       <div className="login-content">
         <div className="login-content__bg">

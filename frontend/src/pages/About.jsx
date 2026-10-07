@@ -1,33 +1,21 @@
 import { Link } from 'react-router-dom';
 import SectionSeparator from '../components/SectionSeparator';
 import '../styles/About.css';
+import PageHero from '../components/ui/PageHero';
 
 const About = () => {
   return (
     <div className="about-page">
 
       {/* ══════════ HERO ══════════ */}
-      <section className="about-hero">
-        <div className="about-hero__orb about-hero__orb--1" />
-        <div className="about-hero__orb about-hero__orb--2" />
-        <div className="about-hero__grid-bg" />
-        <div className="about-hero__inner">
-          <span className="about-hero__pill">Maison d&apos;édition littéraire africaine</span>
-          <div className="about-hero__line" />
-          <h1 className="about-hero__title">
-            Terre Noire <span className="about-hero__title-accent">Éditions</span>
-          </h1>
-          <p className="about-hero__tagline">&laquo; Demain s&apos;écrit aujourd&apos;hui. &raquo;</p>
-          <p className="about-hero__sub">
-            Née en 2025 au cœur de Port-Gentil, capitale économique du Gabon,
-            Terre Noire Éditions est bien plus qu&apos;une maison d&apos;édition.
-            C&apos;est un espace de création, de transmission et de valorisation
-            de la pensée africaine, dans toute sa richesse et sa diversité.
-          </p>
-        </div>
-      </section>
-
-      <div className="about-hero-fade" />
+      <PageHero
+        eyebrow="Maison d'édition littéraire africaine"
+        title="Terre Noire"
+        accent="Éditions"
+        subtitle="Née en 2025 au cœur de Port-Gentil, capitale économique du Gabon, Terre Noire Éditions est bien plus qu'une maison d'édition. C'est un espace de création, de transmission et de valorisation de la pensée africaine, dans toute sa richesse et sa diversité."
+      >
+        <p className="about-hero__tagline">&laquo; Demain s&apos;écrit aujourd&apos;hui. &raquo;</p>
+      </PageHero>
 
       {/* ══════════ MOT DE BIENVENUE ══════════ */}
       <div className="about-content">

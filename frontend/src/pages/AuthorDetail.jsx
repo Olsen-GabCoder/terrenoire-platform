@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import BookCard from '../components/BookCard';
-import { TnPlaceholder, TnDivider } from '../components/ui';
+import { TnPlaceholder } from '../components/ui';
 import LoadingSpinner from '../components/LoadingSpinner';
 import bookService from '../services/bookService';
 import '../styles/AuthorDetail.css';
@@ -91,8 +91,8 @@ const AuthorDetail = () => {
           </div>
         </div>
 
-        <TnDivider dark style={{ marginTop: 40, opacity: 0.5 }} />
       </section>
+      <div className="tn-motif-strip" style={{ opacity: 0.6 }} aria-hidden="true" />
 
       {/* ── BIO + SIDEBAR ── */}
       {author.biography && (

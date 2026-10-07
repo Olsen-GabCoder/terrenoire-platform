@@ -7,6 +7,7 @@ import TnTextarea from '../components/ui/TnTextarea';
 import TnButton from '../components/ui/TnButton';
 import TnAlert from '../components/ui/TnAlert';
 import '../styles/Contact.css';
+import PageHero from '../components/ui/PageHero';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -45,36 +46,25 @@ const Contact = () => {
     <div className="contact-page">
 
       {/* ══════════ HERO ══════════ */}
-      <section className="ct-hero">
-        <div className="ct-hero__orb ct-hero__orb--1" />
-        <div className="ct-hero__orb ct-hero__orb--2" />
-        <div className="ct-hero__grid-bg" />
-        <div className="ct-hero__inner">
-          <span className="ct-hero__pill">
-            <span className="ct-hero__pill-dot" />
-            Disponible · Port-Gentil, Gabon
-          </span>
-          <div className="ct-hero__line" />
-          <h1 className="ct-hero__title">Contactez-<span className="ct-hero__title-accent">nous</span></h1>
-          <p className="ct-hero__sub">
-            Une question, un projet d&apos;édition ou une commande ?
-            Notre équipe est à votre écoute.
-          </p>
-          <div className="ct-hero__trust">
-            {[
-              ['fa-clock', 'Réponse sous 24h'],
-              ['fa-shield-halved', 'Données sécurisées'],
-              ['fa-headset', 'Support humain'],
-            ].map(([icon, label]) => (
-              <span key={label} className="ct-hero__trust-item">
-                <i className={`fas ${icon}`} /> {label}
-              </span>
-            ))}
-          </div>
+      <PageHero
+        eyebrow="Disponible · Port-Gentil, Gabon"
+        icon="fa-location-dot"
+        title="Contactez-"
+        accent="nous"
+        subtitle="Une question, un projet d'édition ou une commande ? Notre équipe est à votre écoute."
+      >
+        <div className="ct-hero__trust">
+          {[
+            ['fa-clock', 'Réponse sous 24h'],
+            ['fa-shield-halved', 'Données sécurisées'],
+            ['fa-headset', 'Support humain'],
+          ].map(([icon, label]) => (
+            <span key={label} className="ct-hero__trust-item">
+              <i className={`fas ${icon}`} /> {label}
+            </span>
+          ))}
         </div>
-      </section>
-
-      <div className="ct-hero-fade" />
+      </PageHero>
 
       {/* ══════════ CONTENU ══════════ */}
       <div className="ct-content">

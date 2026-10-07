@@ -3,6 +3,8 @@ import bookService from '../services/bookService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AuthorCard, { AuthorCardSkeleton } from '../components/AuthorCard';
 import '../styles/Authors.css';
+import PageHero from '../components/ui/PageHero';
+import EmptyState from '../components/ui/EmptyState';
 
 const Authors = () => {
   const [authors, setAuthors] = useState([]);
@@ -49,8 +51,7 @@ const Authors = () => {
 
   if (loading) return (
     <div className="auth-page">
-      <section className="auth-hero"><div className="auth-hero__inner"><h1 className="auth-hero__title">Nos <span>auteurs</span></h1></div></section>
-      <div className="auth-hero-fade" />
+      <PageHero eyebrow="Nos plumes" icon="fa-feather-pointed" title="Nos" accent="auteurs" />
       <div className="auth-content"><div className="auth-grid" aria-busy="true">
         {Array.from({ length: 6 }).map((_, i) => <AuthorCardSkeleton key={i} />)}
       </div></div>
@@ -60,11 +61,9 @@ const Authors = () => {
   if (error) {
     return (
       <div className="auth-page">
-        <div className="auth-state">
-          <div className="auth-state__ico auth-state__ico--err"><i className="fas fa-exclamation-triangle" /></div>
-          <h3>{error}</h3>
-          <button type="button" className="auth-state__btn" onClick={loadAuthors}><i className="fas fa-redo" /> Réessayer</button>
-            </div>
+        <EmptyState icon="fa-triangle-exclamation" tone="error" title={error}>
+          <button type="button" className="tn-btn tn-btn--primary tn-btn--lg" onClick={loadAuthors}><i className="fas fa-rotate-right" /> Réessayer</button>
+        </EmptyState>
             </div>
     );
   }
@@ -72,36 +71,13 @@ const Authors = () => {
   return (
     <div className="auth-page">
       {/* ── HERO ── */}
-      <section className="auth-hero">
-        <div className="auth-hero__orb auth-hero__orb--1" />
-        <div className="auth-hero__orb auth-hero__orb--2" />
-        <div className="auth-hero__grid-bg" />
-        <div className="auth-hero__inner">
-          <div className="auth-hero__line" />
-          <h1 className="auth-hero__title">Nos auteurs</h1>
-          <p className="auth-hero__sub">
-            Découvrez les voix singulières qui composent notre catalogue — chaque plume, une vision du monde.
-          </p>
-          <div className="auth-hero__stats">
-            {[
-              { val: stats.authors, lbl: 'Auteurs' },
-              { val: `${stats.books}+`, lbl: 'Ouvrages' },
-            ].map((s) => (
-              <div className="auth-hero__stat" key={s.lbl}>
-                <span className="auth-hero__stat-val">{s.val}</span>
-                <span className="auth-hero__stat-lbl">{s.lbl}</span>
-          </div>
-            ))}
-              </div>
-          {stats.authors > 0 && (
-            <p className="auth-hero__count">
-              <strong>{stats.authors}</strong> auteur{stats.authors > 1 ? 's' : ''} à découvrir
-            </p>
-          )}
-          </div>
-        </section>
-
-      <div className="auth-hero-fade" />
+      <PageHero
+        eyebrow={stats.authors > 0 ? `${stats.authors} auteur${stats.authors > 1 ? 's' : ''} · ${stats.books}+ ouvrages` : 'Nos plumes'}
+        icon="fa-feather-pointed"
+        title="Nos"
+        accent="auteurs"
+        subtitle="Découvrez les voix singulières qui composent notre catalogue — chaque plume, une vision du monde."
+      />
 
       {/* ── CONTENU ── */}
       <div className="authors-content">
@@ -135,14 +111,11 @@ const Authors = () => {
 
           {/* Grille */}
           {filtered.length === 0 ? (
-            <div className="auth-state">
-              <div className="auth-state__ico"><i className="fas fa-user-slash" /></div>
-              <h3>Aucun auteur trouvé</h3>
-              <p>Essayez un autre terme de recherche.</p>
-              <button type="button" className="auth-state__btn" onClick={() => setSearch('')}>
-                <i className="fas fa-redo" /> Voir tous les auteurs
-                </button>
-              </div>
+            <EmptyState icon="fa-feather-pointed" title="Aucun auteur trouvé" text="Essayez un autre nom ou une autre orthographe.">
+              <button type="button" className="tn-btn tn-btn--primary tn-btn--lg" onClick={() => setSearch('')}>
+                <i className="fas fa-rotate-left" /> Voir tous les auteurs
+              </button>
+            </EmptyState>
             ) : (
             <div className="auth-grid">
               {filtered.map((author) => (

@@ -12,8 +12,8 @@
      ══════════════════════════════════════════════════════════════ */
 
   /* Orange Terracotta — couleur signature */
-  --ds-orange:         #E8601C;
-  --ds-orange-hover:   #C94E15;
+  --ds-orange:         #C24E14; /* cf. design-tokens.css : teinte lisible sur fond clair */
+  --ds-orange-hover:   #A94411;
   --ds-orange-light:   #F4863F;
   --ds-orange-50:      #FCEFE6;
   --ds-orange-100:     #F9DCC8;
@@ -54,8 +54,8 @@
   --ds-error-bg:       #FBE8E8;
   --ds-warning:        #E65100;
   --ds-warning-bg:     #FFF3E0;
-  --ds-info:           #1565C0;
-  --ds-info-bg:        #E3F2FD;
+  --ds-info:           #6B4A2E; /* information : brun « terre », dans la charte (plus de bleu) */
+  --ds-info-bg:        #F7EFE4;
 
   /* ══════════════════════════════════════════════════════════════
      TRANSPARENCES — Atmosphère

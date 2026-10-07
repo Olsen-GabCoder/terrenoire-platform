@@ -4,6 +4,7 @@ import BookCard from '../components/BookCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import bookService from '../services/bookService';
 import '../styles/Catalog.css';
+import EmptyState from '../components/ui/EmptyState';
 
 const ORDER_OPTIONS = [
   { value: '-created_at', label: 'Plus récents' },
@@ -280,11 +281,9 @@ const Catalog = () => {
         {/* Grid */}
         <main className="cat-main">
           {error ? (
-            <div className="cat-empty">
-              <div className="cat-empty__icon cat-empty__icon--err"><i className="fas fa-exclamation-triangle" /></div>
-              <h3 className="cat-empty__title">{error}</h3>
-              <button type="button" className="tn-btn tn-btn--primary" onClick={() => loadBooks(1)}><i className="fas fa-redo" /> Réessayer</button>
-            </div>
+            <EmptyState icon="fa-triangle-exclamation" tone="error" title={error}>
+              <button type="button" className="tn-btn tn-btn--primary tn-btn--lg" onClick={() => loadBooks(1)}><i className="fas fa-rotate-right" /> Réessayer</button>
+            </EmptyState>
           ) : books.length > 0 ? (
             <>
               <div className={`cat-grid${loading ? ' cat-grid--loading' : ''}`}>
@@ -312,12 +311,13 @@ const Catalog = () => {
               )}
             </>
           ) : (
-            <div className="cat-empty">
-              <div className="cat-empty__icon"><i className="fas fa-book-open" /></div>
-              <h3 className="cat-empty__title">Aucun ouvrage ne répond à cet appel</h3>
-              <p className="cat-empty__text">Affinons votre quête. Modifiez vos filtres pour découvrir d&apos;autres horizons littéraires.</p>
-              <button type="button" className="tn-btn tn-btn--primary" onClick={resetFilters}><i className="fas fa-undo" /> Réinitialiser les filtres</button>
-            </div>
+            <EmptyState
+              icon="fa-book-open"
+              title="Aucun ouvrage ne répond à cet appel"
+              text="Affinons votre quête : modifiez vos filtres ou votre recherche pour découvrir d'autres horizons littéraires."
+            >
+              <button type="button" className="tn-btn tn-btn--primary tn-btn--lg" onClick={resetFilters}><i className="fas fa-rotate-left" /> Réinitialiser les filtres</button>
+            </EmptyState>
           )}
         </main>
       </section>

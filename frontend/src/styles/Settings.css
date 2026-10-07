@@ -220,7 +220,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1.25rem;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 600;
   font-size: 0.875rem;
   text-decoration: none;
@@ -268,4 +268,14 @@
 .settings-toggle:focus-within .settings-toggle__slider {
   outline: 2px solid var(--color-primary, #E8601C);
   outline-offset: 2px;
+}
+
+/* Titres de cartes : même typographie sur tout le site (Playfair 20px) */
+.settings-card h2 {
+  font-family: var(--tn-serif);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--tn-gray-900);
 }

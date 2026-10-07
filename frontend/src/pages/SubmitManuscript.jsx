@@ -10,6 +10,7 @@ import TnButton from '../components/ui/TnButton';
 import TnAlert from '../components/ui/TnAlert';
 import TnCheckbox from '../components/ui/TnCheckbox';
 import '../styles/SubmitManuscript.css';
+import PageHero from '../components/ui/PageHero';
 
 const GENRE_OPTIONS = [
   { value: 'ROMAN', label: 'Roman' },
@@ -174,17 +175,7 @@ const SubmitManuscript = () => {
   if (success) {
     return (
       <div className="submit-manuscript-page">
-        <section className="submit-manuscript-hero">
-          <div className="submit-manuscript-hero__orb submit-manuscript-hero__orb--1" />
-          <div className="submit-manuscript-hero__orb submit-manuscript-hero__orb--2" />
-          <div className="submit-manuscript-hero__grid-bg" />
-          <div className="submit-manuscript-hero__inner">
-            <div className="submit-manuscript-hero__line" />
-            <h1 className="submit-manuscript-hero__title">Soumission reçue</h1>
-            <p className="submit-manuscript-hero__sub">Merci pour votre confiance.</p>
-          </div>
-        </section>
-        <div className="submit-manuscript-hero-fade" />
+        <PageHero compact eyebrow="Manuscrit envoyé" icon="fa-check" title="Soumission" accent="reçue" subtitle="Merci pour votre confiance." />
         <div className="submit-manuscript-container success-view">
           <div className="success-card">
             <div className="success-icon">
@@ -215,19 +206,13 @@ const SubmitManuscript = () => {
 
   return (
     <div className="submit-manuscript-page">
-      <section className="submit-manuscript-hero">
-        <div className="submit-manuscript-hero__orb submit-manuscript-hero__orb--1" />
-        <div className="submit-manuscript-hero__orb submit-manuscript-hero__orb--2" />
-        <div className="submit-manuscript-hero__grid-bg" />
-        <div className="submit-manuscript-hero__inner">
-          <div className="submit-manuscript-hero__line" />
-          <h1 className="submit-manuscript-hero__title">Soumettez votre manuscrit</h1>
-          <p className="submit-manuscript-hero__sub">
-            Vous êtes auteur ? Partagez votre œuvre avec nous. Notre équipe éditoriale examine chaque projet avec attention.
-          </p>
-        </div>
-      </section>
-      <div className="submit-manuscript-hero-fade" />
+      <PageHero
+        eyebrow="Auteurs"
+        icon="fa-feather-pointed"
+        title="Soumettez votre"
+        accent="manuscrit"
+        subtitle="Vous êtes auteur ? Partagez votre œuvre avec nous. Notre équipe éditoriale examine chaque projet avec attention."
+      />
       <div className="submit-manuscript-container">
         <div className="submit-manuscript-content">
           {/* Left Side - Info Cards */}

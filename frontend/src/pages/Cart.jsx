@@ -7,6 +7,8 @@ import { couponAPI } from '../services/api';
 import TnAlert from '../components/ui/TnAlert';
 import { TnBookCover } from '../components/ui';
 import '../styles/Cart.css';
+import PageHero from '../components/ui/PageHero';
+import EmptyState from '../components/ui/EmptyState';
 
 const Cart = () => {
   const { shippingFreeThreshold, shippingCost } = useDeliveryConfig();
@@ -92,27 +94,19 @@ const Cart = () => {
   if (!cartItems.length) {
     return (
       <div className="crt-page">
-        <section className="crt-hero">
-          <div className="crt-hero__orb" />
-          <div className="crt-hero__grid-bg" />
-          <div className="crt-hero__inner">
-            <div className="crt-hero__line" />
-            <h1 className="crt-hero__title">Mon Panier</h1>
-            <p className="crt-hero__sub">Votre panier est vide pour le moment.</p>
-          </div>
-        </section>
-        <div className="crt-hero-fade" />
+        <PageHero compact title="Mon" accent="panier" subtitle="Votre panier est vide pour le moment." />
 
         <div className="crt-content">
           <div className="crt-empty">
-            <div className="crt-empty__ico"><i className="fas fa-shopping-bag" /></div>
-            <h2>Votre besace attend ses compagnons</h2>
-            <p>Parcourez notre catalogue pour découvrir des œuvres qui sauront vous accompagner.</p>
-            <div className="crt-empty__actions">
-              <Link to="/catalog" className="crt-btn crt-btn--primary">
-                <i className="fas fa-book" /> Explorer le catalogue
+            <EmptyState
+              icon="fa-bag-shopping"
+              title="Votre besace attend ses compagnons"
+              text="Parcourez notre catalogue pour découvrir des œuvres qui sauront vous accompagner."
+            >
+              <Link to="/catalog" className="tn-btn tn-btn--primary tn-btn--lg">
+                <i className="fas fa-book-open" /> Explorer le catalogue
               </Link>
-            </div>
+            </EmptyState>
             <div className="crt-empty__features">
               {[
                 { ico: 'fas fa-truck', t: 'Livraison', d: 'Libreville, Port-Gentil, Lambaréné' },
@@ -135,18 +129,12 @@ const Cart = () => {
   /* ── PANIER REMPLI ── */
   return (
     <div className="crt-page">
-      <section className="crt-hero">
-        <div className="crt-hero__orb" />
-        <div className="crt-hero__grid-bg" />
-        <div className="crt-hero__inner">
-          <div className="crt-hero__line" />
-          <h1 className="crt-hero__title">Mon Panier</h1>
-          <p className="crt-hero__sub">
-            {getTotalItems()} article{getTotalItems() > 1 ? 's' : ''} dans votre panier
-          </p>
-        </div>
-      </section>
-      <div className="crt-hero-fade" />
+      <PageHero
+        compact
+        title="Mon"
+        accent="panier"
+        subtitle={`${getTotalItems()} article${getTotalItems() > 1 ? 's' : ''} dans votre panier`}
+      />
 
       <div className="crt-content">
         <div className="crt-layout">

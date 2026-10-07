@@ -636,3 +636,13 @@
     padding: 1.5rem;
   }
 }
+
+/* Titres de cartes : même typographie sur tout le site (Playfair 20px) */
+.form-header h2 {
+  font-family: var(--tn-serif);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--tn-gray-900);
+}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/FAQ.css';
+import PageHero from '../components/ui/PageHero';
 
 const FAQ_CATEGORIES = [
   {
@@ -126,24 +127,19 @@ const FAQ = () => {
 
   return (
     <div className="faq-page">
-      <section className="faq-hero">
-        <div className="faq-hero__orb faq-hero__orb--1" />
-        <div className="faq-hero__orb faq-hero__orb--2" />
-        <div className="faq-hero__grid-bg" />
-        <div className="faq-hero__inner">
-          <span className="faq-hero__pill"><i className="fas fa-circle-question" /> {totalQuestions} questions</span>
-          <div className="faq-hero__line" />
-          <h1 className="faq-hero__title">Questions <span className="faq-hero__title-accent">fréquentes</span></h1>
-          <p className="faq-hero__sub">Retrouvez les réponses à toutes vos questions sur nos livres, commandes et services.</p>
-          <div className="faq-search">
-            <i className="fas fa-search" />
-            <input type="text" placeholder="Rechercher une question..." value={search} onChange={e => setSearch(e.target.value)} />
-            {search && <button onClick={() => setSearch('')} aria-label="Effacer"><i className="fas fa-times" /></button>}
-          </div>
+      <PageHero
+        eyebrow={`${totalQuestions} questions`}
+        icon="fa-circle-question"
+        title="Questions"
+        accent="fréquentes"
+        subtitle="Retrouvez les réponses à toutes vos questions sur nos livres, commandes et services."
+      >
+        <div className="faq-search">
+          <i className="fas fa-search" />
+          <input type="text" placeholder="Rechercher une question..." value={search} onChange={e => setSearch(e.target.value)} />
+          {search && <button onClick={() => setSearch('')} aria-label="Effacer"><i className="fas fa-times" /></button>}
         </div>
-      </section>
-
-      <div className="faq-hero-fade" />
+      </PageHero>
 
       <div className="faq-content">
         {/* Category pills */}

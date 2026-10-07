@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import TnInput from '../components/ui/TnInput';
 import '../styles/Settings.css';
+import PageHero from '../components/ui/PageHero';
 
 const EMPTY_PASSWORDS = { old_password: '', new_password: '', new_password_confirm: '' };
 
@@ -81,19 +82,11 @@ const Settings = () => {
 
   return (
     <div className="settings-page">
-      <section className="settings-hero">
-        <div className="settings-hero__orb settings-hero__orb--1" />
-        <div className="settings-hero__grid-bg" />
-        <div className="settings-hero__inner">
-          <div className="settings-hero__line" />
-          <h1 className="settings-hero__title">Paramètres</h1>
-          <p className="settings-hero__sub">
-            Gérez vos préférences et les notifications de votre compte.
-          </p>
-        </div>
-      </section>
-
-      <div className="settings-hero-fade" />
+      <PageHero
+        compact
+        title="Paramètres"
+        subtitle="Gérez vos préférences et les notifications de votre compte."
+      />
 
       <div className="settings-content">
         <div className="settings-card">

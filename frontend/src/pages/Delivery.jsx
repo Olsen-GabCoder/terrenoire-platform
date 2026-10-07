@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useDeliveryConfig } from '../context/DeliveryConfigContext';
 import '../styles/Delivery.css';
+import PageHero from '../components/ui/PageHero';
 
 const fmtPrice = (n) => Number(n || 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 });
 
@@ -11,22 +12,13 @@ const Delivery = () => {
     <div className="delivery-page">
 
       {/* ══════════ HERO ══════════ */}
-      <section className="dlv-hero">
-        <div className="dlv-hero__orb dlv-hero__orb--1" />
-        <div className="dlv-hero__orb dlv-hero__orb--2" />
-        <div className="dlv-hero__grid-bg" />
-        <div className="dlv-hero__inner">
-          <span className="dlv-hero__pill"><i className="fas fa-truck-fast" /> Livraison au Gabon</span>
-          <div className="dlv-hero__line" />
-          <h1 className="dlv-hero__title">Livraison &amp; <span className="dlv-hero__title-accent">Retours</span></h1>
-          <p className="dlv-hero__sub">
-            Livraison à Libreville, Port-Gentil et Lambaréné, et conditions de retour
-            simplifiées. Vos livres en toute sérénité.
-          </p>
-        </div>
-      </section>
-
-      <div className="dlv-hero-fade" />
+      <PageHero
+        eyebrow="Livraison au Gabon"
+        icon="fa-truck-fast"
+        title="Livraison &"
+        accent="retours"
+        subtitle="Livraison à Libreville, Port-Gentil et Lambaréné, et conditions de retour simplifiées. Vos livres en toute sérénité."
+      />
 
       <div className="dlv-content">
 

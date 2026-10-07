@@ -141,7 +141,7 @@
 
   /* ─────────── --radius-* legacy ─────────── */
   --radius-xs:          var(--ds-r-xs);
-  --radius-sm:          var(--ds-r-xs);   /* legacy --radius-sm = 4px = --tn-r-1 */
+  --radius-sm:          var(--ds-r-sm);   /* boutons et champs : 8px partout (était 4px) */
   --radius-md:          var(--ds-r-sm);   /* legacy --radius-md = 8px = --tn-r-2 */
   --radius-lg:          var(--ds-r-md);   /* legacy --radius-lg = 12px = --tn-r-3 */
   --radius-xl:          var(--ds-r-lg);   /* legacy --radius-xl = 16px = --tn-r-4 */

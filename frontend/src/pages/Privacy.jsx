@@ -1,25 +1,18 @@
 import { Link } from 'react-router-dom';
 import '../styles/Privacy.css';
+import PageHero from '../components/ui/PageHero';
 
 const LAST_UPDATED = '21 mai 2026';
 
 const Privacy = () => {
   return (
     <div className="privacy-page">
-      <section className="privacy-hero">
-        <div className="privacy-hero__orb privacy-hero__orb--1" />
-        <div className="privacy-hero__grid-bg" />
-        <div className="privacy-hero__inner">
-          <div className="privacy-hero__line" />
-          <h1 className="privacy-hero__title">Politique de confidentialité</h1>
-          <p className="privacy-hero__sub">
-            Terre Noire Éditions s&apos;engage à protéger vos données personnelles conformément
-            à la législation gabonaise en vigueur.
-          </p>
-        </div>
-      </section>
-
-      <div className="privacy-hero-fade" />
+      <PageHero
+        eyebrow="Informations légales"
+        title="Politique de"
+        accent="confidentialité"
+        subtitle="Terre Noire Éditions s'engage à protéger vos données personnelles conformément à la législation gabonaise en vigueur."
+      />
 
       <div className="privacy-content">
         <p className="prv-intro">

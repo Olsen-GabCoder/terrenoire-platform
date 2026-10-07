@@ -361,7 +361,7 @@
   margin-bottom: 0.5rem; display: block;
 }
 .chk-pay__title {
-  font-size: 1.125rem; font-weight: 600;
+  font-family: var(--tn-serif); font-size: 20px; font-weight: 700;
   color: var(--color-gray-900); margin: 0 0 1rem;
 }
 .chk-pay__options {
@@ -607,3 +607,14 @@
 
 /* Espace entre le bloc du numéro de paiement et le bouton */
 .chk-pay { margin-bottom: 1rem; }
+
+/* Titres de cartes : même typographie sur tout le site (Playfair 20px) */
+.chk-section h2,
+.chk-summary h2 {
+  font-family: var(--tn-serif);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--tn-gray-900);
+}
