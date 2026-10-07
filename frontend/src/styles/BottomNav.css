@@ -9,7 +9,7 @@
 
 /* Hauteur de la barre du bas, réutilisée par les barres collantes (fiche livre) */
 :root {
-  --tn-bottom-nav-h: calc(47px + max(20px, env(safe-area-inset-bottom)));
+  --tn-bottom-nav-h: calc(56px + max(8px, env(safe-area-inset-bottom)));
 }
 
 @media (max-width: 768px) {
@@ -20,62 +20,78 @@
     left: 0;
     right: 0;
     z-index: 9998;
+    height: var(--tn-bottom-nav-h);
     background: var(--ds-white);
     border-top: 1px solid var(--tn-gray-200);
-    padding: 10px 16px 20px;
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    padding: 4px 4px max(8px, env(safe-area-inset-bottom));
     justify-content: space-around;
-    align-items: center;
+    align-items: stretch;
     box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
   }
 
   .bottom-nav__item {
+    flex: 1;
+    min-width: 0;
+    min-height: 48px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 4px;
+    border-radius: 10px;
     text-decoration: none;
     color: var(--tn-gray-500);
     transition: color 140ms;
-    min-width: 48px;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .bottom-nav__item.active {
     color: var(--tn-orange);
   }
 
+  .bottom-nav__item:focus-visible {
+    outline: 2px solid var(--tn-orange);
+    outline-offset: -2px;
+  }
+
   .bottom-nav__icon {
     position: relative;
-    font-size: 18px;
+    font-size: 19px;
     line-height: 1;
   }
 
   .bottom-nav__badge {
     position: absolute;
-    top: -6px;
-    right: -10px;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
+    top: -7px;
+    right: -11px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
     border-radius: 999px;
+    border: 2px solid var(--ds-white);
     background: var(--tn-orange);
     color: var(--ds-white);
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 700;
+    line-height: 1;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
   .bottom-nav__label {
-    font-family: var(--tn-mono);
-    font-size: 9px;
+    font-family: var(--tn-sans);
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.04em;
+    letter-spacing: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
-  /* Add padding to body so content isn't hidden behind bottom nav */
+  /* Le contenu ne passe jamais sous la barre */
   body {
-    padding-bottom: 72px;
+    padding-bottom: var(--tn-bottom-nav-h);
   }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import BookCard from '../components/BookCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import bookService from '../services/bookService';
@@ -22,6 +22,17 @@ const Catalog = () => {
   const searchDebounceRef = useRef(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
+  // Loupe de l'en-tête mobile : on arrive ici avec le champ de recherche actif
+  // (ref « callback » : le champ peut n'apparaître qu'après le premier chargement)
+  const location = useLocation();
+  const focusedForKey = useRef(null);
+  const searchInputRef = useCallback((node) => {
+    if (node && location.state?.focusSearch && focusedForKey.current !== location.key) {
+      focusedForKey.current = location.key;
+      node.focus({ preventScroll: true });
+      window.scrollTo({ top: 0 });
+    }
+  }, [location.key, location.state]);
 
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -158,8 +169,11 @@ const Catalog = () => {
         <div className="cat-hero__search">
           <i className="fas fa-search" />
           <input
-            type="text"
             placeholder="Rechercher un titre, un auteur, une référence..."
+            ref={searchInputRef}
+            type="search"
+            enterKeyHint="search"
+            aria-label="Rechercher dans le catalogue"
             value={searchInput}
             onChange={(e) => {
               const val = e.target.value;

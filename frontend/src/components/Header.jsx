@@ -178,7 +178,8 @@ const Header = () => {
           <div className="tn-drawer__brand">
             <img src={LOGO_SRC} alt="Terre Noire" className="tn-drawer__logo" />
             <div className="tn-drawer__brand-text">
-              <span className="tn-drawer__brand-name">T. NOIRE</span>
+              <span className="tn-drawer__brand-name">Terre Noire</span>
+              <span className="tn-drawer__brand-sub">Éditions</span>
             </div>
           </div>
           <button className="tn-drawer__close" onClick={() => setMobileMenuOpen(false)} aria-label="Fermer le menu">
@@ -531,17 +532,24 @@ const Header = () => {
             )}
           </div>
 
-          {/* Mobile right cluster — burger only, everything else in drawer */}
+          {/* Mobile : recherche en un geste + menu (panier et favoris sont dans la barre du bas) */}
           <div className="tn-header__mobile-actions">
+            <button
+              type="button"
+              className="tn-header__mobile-search"
+              onClick={() => navigate('/catalog', { state: { focusSearch: true } })}
+              aria-label="Rechercher un livre"
+            >
+              <i className="fas fa-magnifying-glass" aria-hidden="true" />
+            </button>
             <button
               ref={burgerButtonRef}
               className="tn-header__burger"
               onClick={toggleMobileMenu}
-              aria-label="Menu"
+              aria-label={mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
               aria-expanded={mobileMenuOpen}
             >
               <i className={`fas ${mobileMenuOpen ? 'fa-times' : 'fa-bars'}`} />
-              {getTotalItems() > 0 && <span className="tn-header__burger-badge">{getTotalItems()}</span>}
             </button>
           </div>
         </div>

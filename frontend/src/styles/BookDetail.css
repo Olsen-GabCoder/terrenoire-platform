@@ -1392,6 +1392,6 @@
 @media (max-width: 768px) {
   /* Le bouton « haut de page » remonte au-dessus de la barre d'achat */
   body:has(.bd-sticky-buy.is-visible) .ft-top-btn {
-    bottom: calc(var(--tn-bottom-nav-h, 68px) + 76px);
+    bottom: calc(var(--tn-bottom-nav-h, 64px) + 80px);
   }
 }

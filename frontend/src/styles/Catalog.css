@@ -638,3 +638,8 @@
   .cat-content { padding: 16px 16px 40px; }
   .cat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 }
+
+/* Champ de recherche (type="search") : pas de style natif, la croix est la nôtre */
+.cat-hero__search input { -webkit-appearance: none; appearance: none; }
+.cat-hero__search input::-webkit-search-cancel-button,
+.cat-hero__search input::-webkit-search-decoration { display: none; }

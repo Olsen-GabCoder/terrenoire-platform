@@ -829,7 +829,7 @@
 /* FAB above bottom nav on mobile */
 @media (max-width: 768px) {
   .ft-top-btn {
-    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(var(--tn-bottom-nav-h, 64px) + 12px);
     right: 16px;
   }
 }
@@ -996,7 +996,7 @@
 
   /* Back to top — above mobile bottom nav (60px height + 12px gap) */
   .ft-top-btn {
-    bottom: 76px;
+    bottom: calc(var(--tn-bottom-nav-h, 64px) + 12px);
     right: 16px;
     width: 40px;
     height: 40px;
