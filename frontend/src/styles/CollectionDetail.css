@@ -229,5 +229,5 @@
   .coll-books { padding: 32px 20px 48px; }
   .coll-books__header { flex-direction: column; align-items: flex-start; gap: 8px; }
   .coll-books__title { font-size: 26px; }
-  .coll-books__grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .coll-books__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 }

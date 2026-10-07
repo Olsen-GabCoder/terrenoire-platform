@@ -152,8 +152,8 @@
 /* Grille des livres */
 .wishlist-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 22px;
 }
 
 .wishlist-card-wrapper {
@@ -207,7 +207,7 @@
   .wishlist-hero { padding: 5rem 1.25rem 2.5rem; }
 
   .wishlist-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr));
     gap: 1rem;
   }
 
@@ -223,5 +223,12 @@
 
   .wishlist-empty {
     padding: 2rem 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .wishlist-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 }

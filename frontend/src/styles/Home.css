@@ -330,13 +330,15 @@
 .home-triptych__book--left {
   width: 180px; height: 252px;
   left: 50%; top: 50%;
-  transform: translate(-50%,-50%) translate(-100px, 35px) rotate(-7deg);
+  --tri-dx: -100px;
+  transform: translate(-50%,-50%) translate(var(--tri-dx), 35px) rotate(-7deg);
   box-shadow: 0 30px 60px rgba(0,0,0,0.45);
 }
 .home-triptych__book--right {
   width: 180px; height: 252px;
   left: 50%; top: 50%;
-  transform: translate(-50%,-50%) translate(100px, 25px) rotate(8deg);
+  --tri-dx: 100px;
+  transform: translate(-50%,-50%) translate(var(--tri-dx), 25px) rotate(8deg);
   box-shadow: 0 30px 60px rgba(0,0,0,0.45);
 }
 .home-triptych__book--center {
@@ -377,12 +379,12 @@
 .home-triptych__float--fast  { animation: triptych-float-fast 4.5s ease-in-out infinite alternate; }
 
 @keyframes triptych-float-slow {
-  from { transform: translate(-50%,-50%) translate(-100px, 35px) rotate(-7deg); }
-  to   { transform: translate(-50%,-50%) translate(-100px, 20px) rotate(-5deg); }
+  from { transform: translate(-50%,-50%) translate(var(--tri-dx), 35px) rotate(-7deg); }
+  to   { transform: translate(-50%,-50%) translate(var(--tri-dx), 20px) rotate(-5deg); }
 }
 @keyframes triptych-float-mid {
-  from { transform: translate(-50%,-50%) translate(100px, 25px) rotate(8deg); }
-  to   { transform: translate(-50%,-50%) translate(100px, 12px) rotate(6deg); }
+  from { transform: translate(-50%,-50%) translate(var(--tri-dx), 25px) rotate(8deg); }
+  to   { transform: translate(-50%,-50%) translate(var(--tri-dx), 12px) rotate(6deg); }
 }
 @keyframes triptych-float-fast {
   from { transform: translate(-50%,-50%) rotate(-1deg); }
@@ -869,6 +871,8 @@
   .home-genres__tab { padding: 8px 14px; font-size: 12px; }
 
   .home-books { padding: 32px 20px; }
+  /* Tablette / grand mobile : au moins 2 colonnes, jamais une carte géante seule */
+  .home-books-grid { grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr)); gap: 16px; }
   .home-authors { padding: 32px 20px; }
   .home-section-header { flex-direction: column; align-items: flex-start; gap: 12px; }
   .home-section-title { font-size: 26px; }
@@ -888,7 +892,15 @@
   .home-hero-stat__label { font-size: 10px; }
   .home-section-label { font-size: 9px; }
   .home-genres__content { min-height: 220px; }
-  .home-books-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .home-books-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  /* Triptyque réduit : les trois couvertures et l'étiquette restent dans l'écran */
+  .home-triptych { height: 340px; }
+  .home-triptych__book--left,
+  .home-triptych__book--right { width: 124px; height: 174px; }
+  .home-triptych__book--left { --tri-dx: -78px; }
+  .home-triptych__book--right { --tri-dx: 78px; }
+  .home-triptych__book--center { width: 160px; height: 224px; }
+  .home-triptych__pick { top: 12px; right: 4px; padding: 8px 10px; font-size: 9px; }
   .home-author-card { width: 170px; padding: 16px; }
   .home-author-card__photo { width: 60px; height: 60px; }
   .home-author-card__name { font-size: 16px; }

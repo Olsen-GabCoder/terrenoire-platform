@@ -1,12 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useWishlist } from '../context/WishlistContext';
-import { useCart } from '../context/CartContext';
 import BookCard from '../components/BookCard';
 import '../styles/Wishlist.css';
 
 const Wishlist = () => {
   const { wishlistItems, removeFromWishlist, isInWishlist } = useWishlist();
-  const { addToCart, isInCart } = useCart();
 
   if (!wishlistItems.length) {
     return (
@@ -70,19 +68,6 @@ const Wishlist = () => {
                   <i className="fas fa-heart-broken" />
                   Retirer
                 </button>
-                {book.available && !isInCart(book.id) && (
-                  <button
-                    type="button"
-                    className="wishlist-add-cart"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      addToCart(book);
-                    }}
-                  >
-                    <i className="fas fa-shopping-cart" />
-                    Au panier
-                  </button>
-                )}
               </div>
             </div>
           ))}

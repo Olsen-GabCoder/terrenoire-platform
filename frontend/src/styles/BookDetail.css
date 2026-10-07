@@ -1127,32 +1127,9 @@
 }
 
 .bd-related__grid {
-  display: flex;
-  gap: 16px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-padding: 16px;
-  padding-bottom: 16px;
-  -webkit-overflow-scrolling: touch;
-}
-
-.bd-related__grid > * {
-  flex: 0 0 240px;
-  scroll-snap-align: start;
-}
-
-.bd-related {
-  position: relative;
-}
-
-.bd-related::after {
-  content: '';
-  position: absolute;
-  top: 0; bottom: 16px; right: 0;
-  width: 40px;
-  background: linear-gradient(to left, var(--tn-cream, #FAFAF5), transparent);
-  pointer-events: none;
-  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 22px;
 }
 
 .bd-same-author {
@@ -1233,7 +1210,8 @@
   }
 
   .bd-related__grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr));
+    gap: 16px;
   }
 }
 
@@ -1250,8 +1228,9 @@
     font-size: 1.5rem;
   }
 
-  .bd-related__grid > * {
-    flex: 0 0 180px;
+  .bd-related__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 }
 

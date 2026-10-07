@@ -235,5 +235,5 @@
   .authd-books { padding: 32px 20px 48px; }
   .authd-books__header { flex-direction: column; align-items: flex-start; gap: 8px; }
   .authd-books__title { font-size: 26px; }
-  .authd-books__grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .authd-books__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 }

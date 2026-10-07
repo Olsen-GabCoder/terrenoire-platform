@@ -946,7 +946,8 @@ const BookDetail = () => {
                 <i className="fas fa-book-open" /> Vous aimerez peut-être aussi
               </h2>
               <div className="bd-related__grid">
-                {relatedBooks.map((b) => (
+                {/* 4 max : 2 rangées pleines sur mobile, une rangée sur ordinateur */}
+                {relatedBooks.slice(0, 4).map((b) => (
                   <BookCard key={b.id} book={b} />
                 ))}
               </div>

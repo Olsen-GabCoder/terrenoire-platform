@@ -406,12 +406,17 @@
    (margin-top: auto) tombe donc au même niveau partout */
 .home-stagger-item,
 .cat-grid > *,
-.bd-related-item {
+.bd-related-item,
+.wishlist-card-wrapper {
   display: flex;
   flex-direction: column;
+  /* Sans cela, un nom d'auteur long (non coupé sur mobile) élargit la colonne
+     et la carte de droite sort de l'écran */
+  min-width: 0;
 }
 .home-stagger-item > .tn-book-card,
-.cat-grid > * > .tn-book-card {
+.cat-grid > * > .tn-book-card,
+.wishlist-card-wrapper > .tn-book-card {
   flex: 1;
 }
 
